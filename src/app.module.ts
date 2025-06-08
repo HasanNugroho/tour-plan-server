@@ -12,6 +12,7 @@ import { AuthGuard } from './account/application/guards/auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { KeyvOptions } from './config/redis.config';
+import { TenantModule } from './tenant/tenant.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { KeyvOptions } from './config/redis.config';
         TypeOrmModule.forRoot(connectionSource.options),
         EventEmitterModule.forRoot(),
         AccountModule,
+        TenantModule,
     ],
     controllers: [],
     providers: [

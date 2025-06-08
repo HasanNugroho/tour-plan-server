@@ -3,6 +3,14 @@ import { IsEmail, IsOptional, IsString, IsUUID, MinLength } from "class-validato
 
 export class CreateUserDto {
     @ApiProperty({
+        description: 'Tenant ID (UUID)',
+        example: '6d3164c9-b672-4ba8-8d9d-cb9aa53563ca',
+    })
+    @IsUUID('4')
+    @IsOptional()
+    tenantId?: string;
+    
+    @ApiProperty({
         description: "user email",
         example: "adam@user.com"
     })
@@ -37,6 +45,12 @@ export class CreateUserDto {
     @MinLength(6)
     @IsString()
     password: string
+
+    @ApiProperty({
+        description: "uuid",
+    })
+    @IsUUID('4')
+    role_id: string;
 }
 
 export class UpdateUserDto {

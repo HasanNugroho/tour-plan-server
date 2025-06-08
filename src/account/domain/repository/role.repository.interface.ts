@@ -36,7 +36,7 @@ export interface IRoleRepository {
      * 
      * @returns A promise that resolves to an object containing the roles and total count of roles.
      */
-    getAll(filter: PaginationOptionsDto): Promise<{ roles: Role[], totalCount: number }>;
+    getAll(filter: PaginationOptionsDto, tenantId: string | null): Promise<{ roles: Role[], totalCount: number }>;
 
     /**
      * Updates an existing role by its ID.

@@ -1,18 +1,18 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class Init1748441125912 implements MigrationInterface {
-    name = 'Init1748441125912'
+export class Init1749366335524 implements MigrationInterface {
+    name = 'Init1749366335524'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             CREATE TABLE "users" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-                "name" character varying NOT NULL,
+                "tenantId" uuid,
                 "fullname" character varying NOT NULL,
                 "username" character varying NOT NULL,
                 "email" character varying NOT NULL,
-                "chiper_text" text NOT NULL,
-                "role_id" uuid,
+                "password_hash" text NOT NULL,
+                "role_id" uuid NOT NULL,
                 "is_active" boolean NOT NULL DEFAULT true,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -37,22 +37,24 @@ export class Init1748441125912 implements MigrationInterface {
             CREATE TABLE "roles" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" character varying NOT NULL,
-                "description" character varying NOT NULL,
-                "access" character varying NOT NULL,
-                "is_active" boolean NOT NULL DEFAULT true,
+                "description" character varying,
+                "permissions" jsonb NOT NULL,
+                "tenantId" uuid,
                 "created_at" TIMESTAMP NOT NULL DEFAULT now(),
                 "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+                CONSTRAINT "UQ_648e3f5447f725579d7d4ffdfb7" UNIQUE ("name"),
                 CONSTRAINT "PK_c1433d71a4838793a49dcad46ab" PRIMARY KEY ("id")
             )
         `);
         await queryRunner.query(`
-            CREATE INDEX "IDX_c1433d71a4838793a49dcad46a" ON "roles" ("id")
+            ALTER TABLE "users"
+            ADD CONSTRAINT "FK_a2cecd1a3531c0b041e29ba46e1" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            DROP INDEX "public"."IDX_c1433d71a4838793a49dcad46a"
+            ALTER TABLE "users" DROP CONSTRAINT "FK_a2cecd1a3531c0b041e29ba46e1"
         `);
         await queryRunner.query(`
             DROP TABLE "roles"

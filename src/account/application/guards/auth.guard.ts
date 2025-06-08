@@ -60,13 +60,14 @@ export class AuthGuard implements CanActivate {
 
             const user = await this.fetchUser(payload.id);
             const role = await this.getRole(user.role_id);
-            const roleNames: string[] = role?.access ? JSON.parse(role.access) : defaultRoles;
+            role.permissions = role.permissions ?? defaultRoles;
 
-            if (roles.length && _.intersection(roles, roleNames).length === 0) {
+            if (roles.length && _.intersection(roles, role.permissions).length === 0) {
                 throw new ForbiddenException('User does not have required roles');
             }
 
-            request['user'] = user;
+            user.role = role;
+            request.user = user;
             return true;
 
         } catch (error) {
@@ -108,9 +109,7 @@ export class AuthGuard implements CanActivate {
         return user;
     }
 
-    private async getRole(roleId: string): Promise<Role | null> {
-        if (!roleId) return null;
-
+    private async getRole(roleId: string): Promise<Role> {
         const key = `role:${roleId}`;
         const cache = await this.cacheManager.get<Role>(key);
 

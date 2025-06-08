@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ForeignKey,
+} from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -9,41 +16,56 @@ const permissionsData = JSON.parse(
 @Entity('roles')
 export class Role {
     @PrimaryGeneratedColumn('uuid')
-    @Index()
     id: string;
 
-    @Column()
+    @Column({ unique: true })
     name: string;
 
-    @Column()
+    @Column({ nullable: true })
     description: string;
 
-    @Column()
-    access: string;
+    @Column('jsonb')
+    permissions: string[];
 
-    @Column({ type: 'boolean', default: true })
-    is_active: boolean;
-
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'uuid', nullable: true })
+    @ForeignKey("tenants")
+    tenantId: string | null;
+    
+    @CreateDateColumn()
     created_at: Date;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @UpdateDateColumn()
     updated_at: Date;
 
-    new(name: string, description: string, access: string[]) {
-        this.name = name;
-        this.description = description;
-        this.access = JSON.stringify(access);
-        return this;
+    new (
+        name: string,
+        description: string,
+        permissions: string[],
+        tenantId: string | null = null,
+    ): Role {
+        const role = new Role();
+        role.name = name;
+        role.description = description;
+        role.permissions = permissions;
+        role.tenantId = tenantId;
+        return role;
     }
 
+    /**
+     * Validates the assigned permissions against the config list.
+     * @returns true if valid, false if contains unknown permissions.
+     */
     validatePermissions(): boolean {
-        const accessArray = JSON.parse(this.access);
-        const invalid = accessArray.filter(
+        const invalid = this.permissions.filter(
             (permission) => !permissionsData.permissions.includes(permission)
         );
-
-        return (invalid.length > 0) ? false : true;
+        return invalid.length === 0;
     }
+}
 
+export enum RoleStatus {
+  Active = "Active",
+  Inactive = "Inactive",
+  Suspended = "Suspended",
+  Deleted = "Deleted",
 }

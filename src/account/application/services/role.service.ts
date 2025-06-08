@@ -1,10 +1,11 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { IRoleRepository } from '../../domain/repository/role.repository.interface';
 import { IRoleService } from '../../domain/service/role.service.interface';
 import { ROLE_REPOSITORY } from 'src/common/constant';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
+import { getContext } from 'src/common/context/request-context.service';
 
 @Injectable()
 export class RoleService implements IRoleService {
@@ -21,10 +22,17 @@ export class RoleService implements IRoleService {
      * @throws NotFoundException if the role is not found.
      */
     async getById(id: string): Promise<Role> {
+        const { tenantId, isSuperUser } = getContext();
+        
         const role = await this.roleRepository.getById(id);
         if (!role) {
             throw new NotFoundException(`Role with ID ${id} not found`);
         }
+
+        if (!isSuperUser && role.tenantId !== tenantId) {
+            throw new ForbiddenException('Access denied for tenant');
+        }
+
         return role;
     }
 
@@ -34,10 +42,17 @@ export class RoleService implements IRoleService {
      * @returns A promise that resolves to the list of roles and the total count.
      */
     async getAll(filter: PaginationOptionsDto): Promise<{ roles: Role[], totalCount: number }> {
-        const { roles, totalCount } = await this.roleRepository.getAll(filter);
-        if (roles.length === 0) {
+        const { tenantId, isSuperUser } = getContext();
+
+        const { roles, totalCount } = await this.roleRepository.getAll(
+            filter,
+            isSuperUser ? null : (tenantId ?? null)
+        );
+
+        if (totalCount === 0) {
             throw new NotFoundException('No roles found');
         }
+
         return { roles, totalCount };
     }
 
@@ -48,7 +63,14 @@ export class RoleService implements IRoleService {
      * @throws ConflictException if the role name already exists.
      */
     async create(roleData: CreateRoleDto): Promise<void> {
-        const role = new Role().new(roleData.name, roleData.description, roleData.access);
+        const { tenantId } = getContext();
+
+        const role = new Role().new(
+            roleData.name,
+            roleData.description,
+            roleData.permissions,
+            tenantId
+        )
 
         if (!role.validatePermissions()) {
             throw new BadRequestException('Invalid permissions provided.');
@@ -69,29 +91,29 @@ export class RoleService implements IRoleService {
      * @throws NotFoundException if the role is not found.
      */
     async update(id: string, roleData: UpdateRoleDto): Promise<void> {
+        const { tenantId } = getContext();
+
         const role = await this.roleRepository.getById(id);
         if (!role) {
             throw new NotFoundException(`Role with ID ${id} not found`);
         }
+        
+        if (role.tenantId !== tenantId) {
+            throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
+        }
 
         role.name = roleData.name || role.name;
         role.description = roleData.description || role.description;
-        role.is_active = roleData.is_active || role.is_active;
 
-        if (roleData.access) {
-            role.access = JSON.stringify(roleData.access);
+        if (roleData.permissions) {
+            role.permissions = roleData.permissions
 
             if (!role.validatePermissions()) {
                 throw new BadRequestException('Invalid permissions provided.');
             }
         }
 
-        try {
-            await this.roleRepository.update(id, role);
-            return
-        } catch (error) {
-            throw new BadRequestException('Failed to update role');
-        }
+        await this.roleRepository.update(id, role);
     }
 
     /**
@@ -101,9 +123,15 @@ export class RoleService implements IRoleService {
      * @throws NotFoundException if the role is not found.
      */
     async delete(id: string): Promise<void> {
+        const { tenantId } = getContext();
+
         const role = await this.roleRepository.getById(id);
         if (!role) {
             throw new NotFoundException(`Role with ID ${id} not found`);
+        }
+
+        if (role.tenantId !== tenantId) {
+            throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
         }
 
         // Delete the role

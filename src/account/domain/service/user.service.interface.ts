@@ -39,6 +39,22 @@ export interface IUserService {
     create(userData: CreateUserDto): Promise<void>;
 
     /**
+     * Change the role of an existing user.
+     * @param userId - The ID of the user whose role is to be changed.
+     * @param roleId - The ID of the new role.
+     * @returns A promise that resolves when the role is updated.
+     */
+    changeRole(userId: string, roleId: string): Promise<void>;
+
+    /**
+     * Toggle the active status of a user (enable/disable account).
+     * @param userId - The ID of the user to update.
+     * @param isActive - The new status.
+     * @returns A promise that resolves when the status is updated.
+     */
+    toggleStatus(userId: string, isActive: boolean): Promise<void>;
+
+    /**
      * Update an existing user's details.
      * @param id - The ID of the user to update.
      * @param userData - The new data to update the user with.

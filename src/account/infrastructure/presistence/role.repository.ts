@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { FindOptionsWhere, ILike, In, Repository } from "typeorm";
+import { FindOptionsWhere, ILike, In, IsNull, Repository } from "typeorm";
 import { IRoleRepository } from "src/account/domain/repository/role.repository.interface";
 import { Role } from "src/account/domain/role";
 import { PaginationOptionsDto } from "src/common/dtos/page-option.dto";
@@ -24,13 +24,15 @@ export class RoleRepository implements IRoleRepository {
         return this.db.findOne({ where: { id } });
     }
 
-    async getAll(filter: PaginationOptionsDto): Promise<{ roles: Role[]; totalCount: number; }> {
+    async getAll(filter: PaginationOptionsDto, tenantId: string | null): Promise<{ roles: Role[]; totalCount: number; }> {
         const where: FindOptionsWhere<Role> = {};
         const offset = (filter.page - 1) * filter.limit;
 
         if (filter.keyword) {
             where.name = ILike(`%${filter.keyword}%`);
         }
+        
+        where.tenantId = tenantId ?? IsNull()
 
         const [roles, totalCount] = await this.db.findAndCount({
             where,

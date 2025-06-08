@@ -1,5 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    Index,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ForeignKey,
+} from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Role } from './role';
 
 @Entity('users')
 export class User {
@@ -7,8 +16,9 @@ export class User {
     @Index()
     id: string;
 
-    @Column()
-    name: string;
+    @Column('uuid', { nullable: true })
+    @ForeignKey("tenants")
+    tenantId: string | null;
 
     @Column()
     fullname: string;
@@ -22,42 +32,52 @@ export class User {
     email: string;
 
     @Column('text')
-    chiper_text: string;
+    password_hash: string;
 
-    @Column({ type: 'uuid', default: null, nullable: true })
+    @Column({ type: 'uuid'})
+    @ForeignKey("roles")
     @Index()
     role_id: string;
+    role?: Role
 
     @Column({ type: 'boolean', default: true })
     is_active: boolean;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @CreateDateColumn()
     created_at: Date;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @UpdateDateColumn()
     updated_at: Date;
 
-    new(name: string, fullname: string, username: string, email: string, password: string) {
-        this.name = name;
+    async new(
+        fullname: string,
+        username: string,
+        email: string,
+        password: string,
+        role_id: string,
+        tenantId: string | null = null
+    ): Promise<User> {
         this.fullname = fullname;
         this.username = username;
         this.email = email;
-        this.chiper_text = password;
-
+        this.password_hash = await this.setPassword(password);
+        this.role_id = role_id;
+        this.tenantId = tenantId,
+        this.is_active = true;
         return this;
     }
 
-    async encryptPassword(password: string): Promise<void> {
-        const saltOrRounds = 10;
-        this.chiper_text = await bcrypt.hash(password, saltOrRounds);
+    async setPassword(plain: string): Promise<string> {
+        this.password_hash = await bcrypt.hash(plain, 10);
+        return this.password_hash;
     }
 
     validatePasswordHash(password: string): boolean {
-        return bcrypt.compare(password, this.chiper_text);
+        return bcrypt.compare(password, this.password_hash);
     }
 
     toResponse() {
-        const { chiper_text, ...userData } = this;
+        const { password_hash, ...userData } = this;
         return userData;
     }
 }

@@ -22,7 +22,7 @@ export class CreateRoleDto {
     })
     @IsArray()
     @IsString({ each: true })
-    access: string[];
+    permissions: string[];
 }
 
 export class UpdateRoleDto {
@@ -57,5 +57,5 @@ export class UpdateRoleDto {
     @IsArray()
     @IsString({ each: true })
     @IsOptional()
-    access?: string[];
+    permissions?: string[];
 }
