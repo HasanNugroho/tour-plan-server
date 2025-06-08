@@ -17,7 +17,7 @@ export class PaginationOptionsDto {
     @ApiPropertyOptional()
     @IsString()
     @IsOptional()
-    orderby?: string = 'updatedAt';
+    orderby?: string = 'updated_at';
 
     @ApiPropertyOptional({
         minimum: 1,

@@ -23,7 +23,7 @@ export class TenantRepository implements ITenantRepository {
     async findAll(
         pagination: PaginationOptionsDto,
     ): Promise<{ data: Tenant[]; total: number }> {
-        const { keyword, order = 'ASC', orderby = 'updatedAt', limit = 10 } = pagination;
+        const { keyword, order = 'ASC', orderby = 'updated_at', limit = 10 } = pagination;
 
         const where = keyword
             ? [

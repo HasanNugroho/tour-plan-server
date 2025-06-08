@@ -47,6 +47,7 @@ export class AuthController {
     @Roles('users:read')
     @Get('me')
     async me(@CurrentUser() user: User) {
+        // console.log(user)
         return new HttpResponse(HttpStatus.OK, true, 'Fetch user successfully', user.toResponse());
     }
 

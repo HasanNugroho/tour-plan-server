@@ -37,7 +37,6 @@ function configureApp(app) {
         whitelist: true,
     }));
     app.enableCors();
-    app.useGlobalFilters(app.get(HttpExceptionFilter));
 }
 
 /**

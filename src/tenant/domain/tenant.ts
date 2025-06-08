@@ -36,7 +36,7 @@ export class Tenant {
     createdAt: Date;
 
     @UpdateDateColumn({ type: 'timestamp' })
-    updatedAt: Date;
+    updated_at: Date;
 
     new(
         name: string,
@@ -62,16 +62,16 @@ export class Tenant {
         this.description = description;
         this.address = address;
         this.contact_info = contact_info
-        this.updatedAt = new Date();
+        this.updated_at = new Date();
     }
 
     deactivate() {
         this.is_active = false;
-        this.updatedAt = new Date();
+        this.updated_at = new Date();
     }
 
     activate() {
         this.is_active = true;
-        this.updatedAt = new Date();
+        this.updated_at = new Date();
     }
 }

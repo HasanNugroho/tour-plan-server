@@ -7,13 +7,13 @@ import { connectionSource } from './config/database.config';
 import { winstonLoggerConfig } from './config/logger.config';
 import { WinstonModule } from 'nest-winston';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './account/application/guards/auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { KeyvOptions } from './config/redis.config';
 import { TenantModule } from './tenant/tenant.module';
-import { seconds, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ContextMiddleware } from './common/middlewares/context.middleware';
 import Redis from 'ioredis';
@@ -33,20 +33,20 @@ import Redis from 'ioredis';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
+                const ttl = config.get<number>('throttle.ttl') ?? 60;
+                const limit = config.get<number>('throttle.limit') ?? 10;
+                console.log('Throttle TTL:', ttl);
+                console.log('Throttle Limit:', limit);
+
                 const redis = new Redis({
-                host: config.get('redis.host'),
-                port: config.get('redis.port'),
-                password: config.get('redis.password'),
+                    host: config.get('redis.host'),
+                    port: config.get('redis.port'),
+                    password: config.get('redis.password'),
                 });
 
                 return {
-                throttlers: [
-                    {
-                    ttl: config.get<number>('throttle.ttl') ?? 60,
-                    limit: config.get<number>('throttle.limit') ?? 10,
-                    },
-                ],
-                storage: new ThrottlerStorageRedisService(redis),
+                    throttlers: [{ ttl, limit }],
+                    storage: new ThrottlerStorageRedisService(redis),
                 };
             },
         }),
@@ -56,11 +56,18 @@ import Redis from 'ioredis';
     controllers: [],
     providers: [
         {
+            provide: APP_FILTER,
+            useClass: HttpExceptionFilter,
+        },
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard
+        },
+        {
             provide: APP_GUARD,
             useClass: AuthGuard,
         },
         Logger,
-        HttpExceptionFilter,
     ],
 })
 

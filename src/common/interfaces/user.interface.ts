@@ -7,7 +7,7 @@ export interface IUser {
     email: string;
     role: Role;
     createdAt: Date;
-    updatedAt: Date;
+    updated_at: Date;
 
     password?: string;
 }

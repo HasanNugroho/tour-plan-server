@@ -14,7 +14,7 @@ export class Init1749395597848 implements MigrationInterface {
                 "contact_info" text,
                 "is_active" boolean NOT NULL DEFAULT true,
                 "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
-                "updatedAt" TIMESTAMP NOT NULL DEFAULT now(),
+                "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
                 CONSTRAINT "UQ_3021c18db2b363ae9324c826c5a" UNIQUE ("code"),
                 CONSTRAINT "PK_53be67a04681c66b87ee27c9321" PRIMARY KEY ("id")
             )

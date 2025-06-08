@@ -1,7 +1,7 @@
 # Nest JS boilerplate
-Typescript backend template with NestJS and PostgreSQL
+A robust TypeScript backend template built with NestJS, featuring a modular architecture, seamless integration with PostgreSQL for database management, and support for Docker to streamline deployment.
 
-## [Nestjs-Boilerplate](https://github.com/HasanNugroho/nestjs-boilerplate)
+## [Tour Plan Server](https://github.com/HasanNugroho/tour-plan-server.git)
 ## Getting Started
 
 ### Requirements
@@ -14,8 +14,8 @@ Typescript backend template with NestJS and PostgreSQL
 
 Clone this project:
 ```shell script
-git clone https://github.com/HasanNugroho/nestjs-boilerplate.git
-cd nestjs-boilerplate
+git clone https://github.com/HasanNugroho/tour-plan-server.git
+cd tour-plan-server
 ```
 
 ### Manual Installation
