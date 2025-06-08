@@ -1,0 +1,27 @@
+# Node modules dan dependency cache
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-store
+
+.env
+.env.local
+.env.*.local
+
+# Git & VCS
+.git
+.gitignore
+
+# Docker sendiri
+.dockerignore
+Dockerfile
+
+# Editor/IDE related
+.vscode
+.idea
+*.swp
+*.swo
+
+# Sistem OS
+.DS_Store
+Thumbs.db

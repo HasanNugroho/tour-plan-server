@@ -1,0 +1,18 @@
+{
+    "permissions": [
+        "users:create",
+        "users:read",
+        "users:update",
+        "users:delete",
+        "manage:system",
+        "roles:create",
+        "roles:read",
+        "roles:update",
+        "roles:delete",
+        "roles:assign",
+        "roles:unassign"
+    ],
+    "default_permission": [
+        "users:read"
+    ]
+}
