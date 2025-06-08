@@ -22,10 +22,12 @@
         "migration:run": "npm run typeorm migration:run -- -d ./src/config/database.config.ts",
         "migration:generate": "npm run typeorm -- migration:generate -d ./src/config/database.config.ts -p ./src/migrations/%npm_config_name%",
         "migration:create": "npm run typeorm -- migration:create ./src/migrations/%npm_config_name% ",
-        "migration:revert": "npm run typeorm -- -d ./src/config/database.config.ts migration:revert"
+        "migration:revert": "npm run typeorm -- -d ./src/config/database.config.ts migration:revert",
+        "seed": "ts-node -r tsconfig-paths/register src/seed/role.seed.ts"
     },
     "dependencies": {
         "@keyv/redis": "^4.4.0",
+        "@nest-lab/throttler-storage-redis": "^1.1.0",
         "@nestjs/cache-manager": "^3.0.1",
         "@nestjs/common": "^11.0.1",
         "@nestjs/config": "^4.0.2",
@@ -42,6 +44,7 @@
         "class-validator": "^0.14.1",
         "dotenv": "^16.5.0",
         "glob": "^11.0.2",
+        "ioredis": "^5.6.1",
         "lodash": "^4.17.21",
         "nest-winston": "^1.10.2",
         "pg": "^8.15.6",
@@ -77,6 +80,7 @@
         "ts-jest": "^29.3.2",
         "ts-loader": "^9.5.2",
         "ts-node": "^10.9.2",
+        "tsconfig-paths": "^4.2.0",
         "typeorm": "^0.3.22",
         "typeorm-ts-node-commonjs": "^0.3.20",
         "typescript": "^5.7.3",

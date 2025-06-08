@@ -6,7 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { WinstonModule } from 'nest-winston';
 import { winstonLoggerConfig } from './config/logger.config';
-import { ContextMiddleware } from './common/middlewares/context.middleware';
+import { AuthGuard } from './account/application/guards/auth.guard';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
@@ -36,7 +36,6 @@ function configureApp(app) {
         transform: true,
         whitelist: true,
     }));
-    app.use(ContextMiddleware)
     app.enableCors();
     app.useGlobalFilters(app.get(HttpExceptionFilter));
 }

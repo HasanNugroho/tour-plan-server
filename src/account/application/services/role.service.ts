@@ -58,17 +58,21 @@ export class RoleService implements IRoleService {
 
     /**
      * Create a new role.
-     * @param roleData - The data of the role to create.
+     * @param payload - The data of the role to create.
      * @returns A promise that resolves to the newly created role object.
      * @throws ConflictException if the role name already exists.
      */
-    async create(roleData: CreateRoleDto): Promise<void> {
+    async create(payload: CreateRoleDto): Promise<void> {
         const { tenantId } = getContext();
 
+        if (payload.name.toLowerCase() === 'superadmin') {
+            throw new BadRequestException('Cannot create a superuser role.');
+        }
+
         const role = new Role().new(
-            roleData.name,
-            roleData.description,
-            roleData.permissions,
+            payload.name,
+            payload.description,
+            payload.permissions,
             tenantId
         )
 
@@ -86,11 +90,11 @@ export class RoleService implements IRoleService {
     /**
      * Update an existing role's details.
      * @param id - The ID of the role to update.
-     * @param roleData - The new data to update the role with.
+     * @param payload - The new data to update the role with.
      * @returns A promise that resolves when the role has been updated.
      * @throws NotFoundException if the role is not found.
      */
-    async update(id: string, roleData: UpdateRoleDto): Promise<void> {
+    async update(id: string, payload: UpdateRoleDto): Promise<void> {
         const { tenantId } = getContext();
 
         const role = await this.roleRepository.getById(id);
@@ -102,11 +106,11 @@ export class RoleService implements IRoleService {
             throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
         }
 
-        role.name = roleData.name || role.name;
-        role.description = roleData.description || role.description;
+        role.name = payload.name || role.name;
+        role.description = payload.description || role.description;
 
-        if (roleData.permissions) {
-            role.permissions = roleData.permissions
+        if (payload.permissions) {
+            role.permissions = payload.permissions
 
             if (!role.validatePermissions()) {
                 throw new BadRequestException('Invalid permissions provided.');

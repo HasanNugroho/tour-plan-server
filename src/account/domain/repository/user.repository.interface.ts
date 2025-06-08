@@ -44,4 +44,9 @@ export interface IUserRepository {
      * @returns The updated user
      */
     delete(id: string): Promise<void>;
+
+    /**
+     * @returns The super user, or null if not found
+     */
+    getSuperUser(): Promise<User | null>;
 }   

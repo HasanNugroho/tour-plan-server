@@ -24,6 +24,10 @@ export class RoleRepository implements IRoleRepository {
         return this.db.findOne({ where: { id } });
     }
 
+    async getByName(name: string): Promise<Role | null> {
+        return this.db.findOne({ where: { name } });
+    }
+
     async getAll(filter: PaginationOptionsDto, tenantId: string | null): Promise<{ roles: Role[]; totalCount: number; }> {
         const where: FindOptionsWhere<Role> = {};
         const offset = (filter.page - 1) * filter.limit;

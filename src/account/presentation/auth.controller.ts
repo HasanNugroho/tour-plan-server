@@ -13,6 +13,7 @@ import {
     ApiBadRequestResponse,
     ApiUnauthorizedResponse,
     ApiBearerAuth,
+    ApiTags,
 } from '@nestjs/swagger';
 import { AUTH_SERVICE } from 'src/common/constant';
 import { HttpResponse } from 'src/common/dtos/response.dto';
@@ -22,7 +23,9 @@ import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User } from '../domain/user';
 import { Public } from 'src/common/decorators/public.decorator';
 import { TokenPayloadDto } from './dto/auth.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
+@ApiTags('Auth')
 @Controller('api/auth')
 export class AuthController {
     constructor(
@@ -41,12 +44,14 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
+    @Roles('users:read')
     @Get('me')
     async me(@CurrentUser() user: User) {
         return new HttpResponse(HttpStatus.OK, true, 'Fetch user successfully', user.toResponse());
     }
 
     @ApiBearerAuth()
+    @Roles('users:deactivate')
     @Post('logout')
     async logout(@Req() req: any, @Body() body: TokenPayloadDto) {
         const accessToken = req.headers['authorization']?.split(' ')[1];

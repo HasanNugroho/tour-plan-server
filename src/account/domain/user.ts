@@ -16,6 +16,7 @@ export class User {
     @Index()
     id: string;
 
+    @Index()
     @Column('uuid', { nullable: true })
     @ForeignKey("tenants")
     tenantId: string | null;
@@ -23,20 +24,20 @@ export class User {
     @Column()
     fullname: string;
 
-    @Column({ unique: true })
     @Index()
+    @Column({ unique: true })
     username: string;
 
-    @Column({ unique: true })
     @Index()
+    @Column({ unique: true })
     email: string;
 
     @Column('text')
     password_hash: string;
 
+    @Index()
     @Column({ type: 'uuid'})
     @ForeignKey("roles")
-    @Index()
     role_id: string;
     role?: Role
 

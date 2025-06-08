@@ -10,7 +10,7 @@ export class ContextMiddleware implements NestMiddleware {
     const context = {
       tenantId: user?.tenantId ?? null,
       userId: user?.id ?? null,
-      isSuperUser: (user?.role?.name || '').toUpperCase() === 'SUPERADMIN',
+      isSuperUser: (user?.role?.name || '').toLowerCase() === 'superadmin',
     };
 
     RequestContext.run(context, () => next());

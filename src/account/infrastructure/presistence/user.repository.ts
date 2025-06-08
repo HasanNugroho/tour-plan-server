@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { User } from "src/account/domain/user";
 import { IUserRepository } from "src/account/domain/repository/user.repository.interface";
 
@@ -56,5 +56,11 @@ export class UserRepository implements IUserRepository {
         } catch (error) {
             throw new InternalServerErrorException(error);
         }
+    }
+
+    getSuperUser(): Promise<User | null> {
+        return this.db.findOne({
+            where: { tenantId: IsNull() },
+        });
     }
 }

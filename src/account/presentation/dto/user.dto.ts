@@ -12,35 +12,28 @@ export class CreateUserDto {
     
     @ApiProperty({
         description: "user email",
-        example: "adam@user.com"
+        example: "admin@user.com"
     })
     @IsEmail()
     email: string
 
     @ApiProperty({
-        description: "Nama user",
-        example: "adam"
-    })
-    @IsString()
-    name: string
-
-    @ApiProperty({
         description: "Full name",
-        example: "adam"
+        example: "admin"
     })
     @IsString()
     fullname: string
 
     @ApiProperty({
         description: "username",
-        example: "adam123"
+        example: "admin123"
     })
     @IsString()
     username: string
 
     @ApiProperty({
         description: "password",
-        example: "adam123"
+        example: "admin123"
     })
     @MinLength(6)
     @IsString()
@@ -50,29 +43,22 @@ export class CreateUserDto {
         description: "uuid",
     })
     @IsUUID('4')
+    @IsOptional()
     role_id: string;
 }
 
 export class UpdateUserDto {
     @ApiProperty({
         description: "user email",
-        example: "adam@user.com"
+        example: "admin@user.com"
     })
     @IsEmail()
     @IsOptional()
     email?: string
 
     @ApiProperty({
-        description: "Nama user",
-        example: "adam"
-    })
-    @IsString()
-    @IsOptional()
-    name?: string
-
-    @ApiProperty({
         description: "Full name",
-        example: "adam"
+        example: "admin"
     })
     @IsString()
     @IsOptional()
@@ -87,7 +73,7 @@ export class UpdateUserDto {
 
     @ApiProperty({
         description: "password",
-        example: "adam123"
+        example: "admin123"
     })
     @MinLength(6)
     @IsString()

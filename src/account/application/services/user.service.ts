@@ -232,4 +232,26 @@ export class UserService implements IUserService {
             throw error;
         }
     }
+
+    async setupSuperUser(payload: CreateUserDto): Promise<void> {
+        const existingSuperUser = await this.userRepository.getSuperUser();
+        if (existingSuperUser) {
+            throw new BadRequestException('Superuser already exists');
+        }
+
+        const role = await this.roleRepository.getByName('superadmin');
+        if (!role) {
+            throw new BadRequestException('Invalid role');
+        }
+
+        const superUser = await new User().new(
+            payload.fullname,
+            payload.username,
+            payload.email,
+            payload.password,
+            role.id
+        );
+
+        await this.userRepository.create(superUser);
+    }
 }

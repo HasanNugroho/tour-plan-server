@@ -17,5 +17,14 @@ export default () => ({
         user: process.env.DB_USER,
         password: process.env.DB_PASS,
         name: process.env.DB_NAME,
+    },
+    redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        password: process.env.REDIS_PASSWORD || undefined,
+    },
+    throttle: {
+        ttl: parseInt(process.env.THROTTLE_TTL || '60', 10),
+        limit: parseInt(process.env.THROTTLE_LIMIT || '10', 10),
     }
 });

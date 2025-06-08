@@ -21,6 +21,15 @@ export interface IRoleRepository {
     getById(id: string): Promise<Role | null>;
 
     /**
+     * gets a role by its Name.
+     * 
+     * @param name - The Name of the role to get.
+     * 
+     * @returns A promise that resolves to the role with the given ID, or null if not found.
+     */
+    getByName(name: string): Promise<Role | null>;
+
+    /**
      * gets multiple roles by their IDs.
      * 
      * @param ids - An array of role IDs to get.

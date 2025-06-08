@@ -2,13 +2,15 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, ParseUUIDPipe, Post, 
 import { Inject } from '@nestjs/common';
 import { IUserService } from '../domain/service/user.service.interface';
 import { User } from '../domain/user';
-import { ApiOperation, ApiCreatedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiConflictResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiCreatedResponse, ApiBadRequestResponse, ApiNotFoundResponse, ApiConflictResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { USER_SERVICE } from 'src/common/constant';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { HttpResponse } from 'src/common/dtos/response.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @ApiBearerAuth()
+@ApiTags('Users')
 @Controller('api/users')
 export class UserController {
     constructor(
@@ -37,17 +39,17 @@ export class UserController {
         } catch (error) {
             throw error;
         }
-
     }
 
     @ApiOperation({ summary: 'Get user by ID' })
     @ApiNotFoundResponse({
         description: "User not found",
     })
+    @Roles('users:read')
     @Get(':id')
     async getById(@Param('id', new ParseUUIDPipe()) id: string) {
         const user = await this.userService.getById(id);
-        return new HttpResponse(HttpStatus.CREATED, true, "fetch user(s) successfully", user.toResponse())
+        return new HttpResponse(HttpStatus.OK, true, "fetch user(s) successfully", user.toResponse())
     }
 
     @ApiOperation({ summary: 'Update user by ID' })
@@ -57,19 +59,40 @@ export class UserController {
     @ApiBadRequestResponse({
         description: "Bad request",
     })
+    @Roles('users:update')
     @Put(':id')
     async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() userData: UpdateUserDto) {
         const result = await this.userService.update(id, userData);
-        return new HttpResponse(HttpStatus.CREATED, true, "update user successfully", result)
+        return new HttpResponse(HttpStatus.OK, true, "update user successfully", result)
+    }
+
+        @ApiOperation({ summary: 'Setup superuser (hanya satu kali)' })
+    @ApiCreatedResponse({
+        description: 'Superuser berhasil dibuat',
+        type: User,
+    })
+    @ApiBadRequestResponse({
+        description: 'Superuser sudah ada',
+    })
+    @Post('setup-superuser')
+    @Public()
+    async setupSuperUser(@Body() payload: CreateUserDto) {
+        try {
+            await this.userService.setupSuperUser(payload);
+            return new HttpResponse(HttpStatus.CREATED, true, 'superuser created successfully');
+        } catch (error) {
+            throw error;
+        }
     }
 
     @ApiOperation({ summary: 'Delete user by ID' })
     @ApiNotFoundResponse({
         description: "User not found",
     })
+    @Roles('users:delete')
     @Delete(':id')
     async delete(@Param('id', new ParseUUIDPipe()) id: string) {
         const result = await this.userService.delete(id);
-        return new HttpResponse(HttpStatus.CREATED, true, "delete user successfully", result)
+        return new HttpResponse(HttpStatus.OK, true, "delete user successfully", result)
     }
 }

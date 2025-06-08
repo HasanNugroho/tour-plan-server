@@ -70,4 +70,12 @@ export interface IUserService {
      * @throws NotFoundException if the user is not found.
      */
     delete(id: string): Promise<void>;
+
+    /**
+     * Setup the platform's super user (only once, during initialization).
+     * @param payload - The super user data.
+     * @returns A promise that resolves when the super user is created.
+     * @throws BadRequestException if one already exists.
+     */
+    setupSuperUser(payload: CreateUserDto): Promise<void>;
 }

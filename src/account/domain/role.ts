@@ -5,6 +5,7 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     ForeignKey,
+    Index,
 } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -18,6 +19,7 @@ export class Role {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Index()
     @Column({ unique: true })
     name: string;
 
@@ -27,6 +29,7 @@ export class Role {
     @Column('jsonb')
     permissions: string[];
 
+    @Index()
     @Column({ type: 'uuid', nullable: true })
     @ForeignKey("tenants")
     tenantId: string | null;
