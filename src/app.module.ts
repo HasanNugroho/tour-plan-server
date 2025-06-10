@@ -19,62 +19,59 @@ import { ContextMiddleware } from './common/middlewares/context.middleware';
 import Redis from 'ioredis';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: ['.env.development.local', '.env.development', '.env'],
-            load: [configuration],
-        }),
-        CacheModule.registerAsync(KeyvOptions),
-        WinstonModule.forRoot(winstonLoggerConfig),
-        TypeOrmModule.forRoot(connectionSource.options),
-        EventEmitterModule.forRoot(),
-        ThrottlerModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (config: ConfigService) => {
-                const ttl = config.get<number>('throttle.ttl') ?? 60;
-                const limit = config.get<number>('throttle.limit') ?? 10;
-                console.log('Throttle TTL:', ttl);
-                console.log('Throttle Limit:', limit);
+	imports: [
+		ConfigModule.forRoot({
+			isGlobal: true,
+			envFilePath: ['.env.development.local', '.env.development', '.env'],
+			load: [configuration],
+		}),
+		CacheModule.registerAsync(KeyvOptions),
+		WinstonModule.forRoot(winstonLoggerConfig),
+		TypeOrmModule.forRoot(connectionSource.options),
+		EventEmitterModule.forRoot(),
+		ThrottlerModule.forRootAsync({
+			imports: [ConfigModule],
+			inject: [ConfigService],
+			useFactory: (config: ConfigService) => {
+				const ttl = config.get<number>('throttle.ttl') ?? 60;
+				const limit = config.get<number>('throttle.limit') ?? 10;
+				console.log('Throttle TTL:', ttl);
+				console.log('Throttle Limit:', limit);
 
-                const redis = new Redis({
-                    host: config.get('redis.host'),
-                    port: config.get('redis.port'),
-                    password: config.get('redis.password'),
-                });
+				const redis = new Redis({
+					host: config.get('redis.host'),
+					port: config.get('redis.port'),
+					password: config.get('redis.password'),
+				});
 
-                return {
-                    throttlers: [{ ttl, limit }],
-                    storage: new ThrottlerStorageRedisService(redis),
-                };
-            },
-        }),
-        AccountModule,
-        TenantModule,
-    ],
-    controllers: [],
-    providers: [
-        {
-            provide: APP_FILTER,
-            useClass: HttpExceptionFilter,
-        },
-        {
-            provide: APP_GUARD,
-            useClass: ThrottlerGuard
-        },
-        {
-            provide: APP_GUARD,
-            useClass: AuthGuard,
-        },
-        Logger,
-    ],
+				return {
+					throttlers: [{ ttl, limit }],
+					storage: new ThrottlerStorageRedisService(redis),
+				};
+			},
+		}),
+		AccountModule,
+		TenantModule,
+	],
+	controllers: [],
+	providers: [
+		{
+			provide: APP_FILTER,
+			useClass: HttpExceptionFilter,
+		},
+		{
+			provide: APP_GUARD,
+			useClass: ThrottlerGuard,
+		},
+		{
+			provide: APP_GUARD,
+			useClass: AuthGuard,
+		},
+		Logger,
+	],
 })
-
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ContextMiddleware)
-      .forRoutes('*');
-  }
+	configure(consumer: MiddlewareConsumer) {
+		consumer.apply(ContextMiddleware).forRoutes('*');
+	}
 }

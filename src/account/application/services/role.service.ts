@@ -1,155 +1,128 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ForbiddenException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
 import { IRoleRepository } from '../../domain/repository/role.repository.interface';
 import { IRoleService } from '../../domain/service/role.service.interface';
+import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
 import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
-import { getContext } from 'src/common/context/request-context.service';
-import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
+import { RequestContextService } from 'src/common/context/request-context.service';
 
 @Injectable()
 export class RoleService implements IRoleService {
-    constructor(
-        @Inject(ROLE_REPOSITORY)
-        private readonly roleRepository: IRoleRepository,
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: IUserRepository,
-    ) { }
+	constructor(
+		@Inject(ROLE_REPOSITORY)
+		private readonly roleRepository: IRoleRepository,
 
+		@Inject(USER_REPOSITORY)
+		private readonly userRepository: IUserRepository,
 
-    /**
-     * Fetch a role by its unique ID.
-     * @param id - The ID of the role to retrieve.
-     * @returns A promise that resolves to the role object.
-     * @throws NotFoundException if the role is not found.
-     */
-    async getById(id: string): Promise<Role> {
-        const { tenantId, isSuperUser } = getContext();
-        
-        const role = await this.roleRepository.getById(id);
-        if (!role) {
-            throw new NotFoundException(`Role with ID ${id} not found`);
-        }
+		private readonly contextService: RequestContextService,
+	) {}
 
-        if (!isSuperUser && role.tenantId !== tenantId) {
-            throw new ForbiddenException('Access denied for tenant');
-        }
+	async getById(id: string): Promise<Role> {
+		const tenantId = this.contextService.getTenantId();
+		const isSuperUser = this.contextService.isSuperUser();
 
-        return role;
-    }
+		const role = await this.roleRepository.getById(id);
+		if (!role) {
+			throw new NotFoundException(`Role with ID ${id} not found`);
+		}
 
-    /**
-     * Fetch all roles with a pagination filter.
-     * @param filter - The pagination filter.
-     * @returns A promise that resolves to the list of roles and the total count.
-     */
-    async getAll(filter: PaginationOptionsDto): Promise<{ roles: Role[], totalCount: number }> {
-        const { tenantId, isSuperUser } = getContext();
+		if (!isSuperUser && role.tenantId !== tenantId) {
+			throw new ForbiddenException('Access denied for tenant');
+		}
 
-        const { roles, totalCount } = await this.roleRepository.getAll(
-            filter,
-            isSuperUser ? null : (tenantId ?? null)
-        );
+		return role;
+	}
 
-        return { roles, totalCount };
-    }
+	async getAll(filter: PaginationOptionsDto): Promise<{ roles: Role[]; totalCount: number }> {
+		const tenantId = this.contextService.getTenantId();
+		const isSuperUser = this.contextService.isSuperUser();
 
-    /**
-     * Create a new role.
-     * @param payload - The data of the role to create.
-     * @returns A promise that resolves to the newly created role object.
-     * @throws ConflictException if the role name already exists.
-     */
-    async create(payload: CreateRoleDto): Promise<void> {
-        const { tenantId } = getContext();
+		const { roles, totalCount } = await this.roleRepository.getAll(
+			filter,
+			isSuperUser ? null : (tenantId ?? null),
+		);
 
-        if (payload.name.toLowerCase() === 'superadmin') {
-            throw new BadRequestException('Cannot create a superuser role.');
-        }
+		return { roles, totalCount };
+	}
 
-        const existingRole = await this.roleRepository.getByName(payload.name);
-        if (existingRole && existingRole.tenantId !== tenantId) {
-            throw new BadRequestException('Role name already exists in this tenant');
-        }
+	async create(payload: CreateRoleDto): Promise<void> {
+		const tenantId = this.contextService.getTenantId();
 
-        const role = new Role().new(
-            payload.name,
-            payload.description,
-            payload.permissions,
-            tenantId
-        )
+		if (payload.name.toLowerCase() === 'superadmin') {
+			throw new BadRequestException('Cannot create a superuser role.');
+		}
 
-        if (!role.validatePermissions()) {
-            throw new BadRequestException('Invalid permissions provided.');
-        }
+		const existingRole = await this.roleRepository.getByName(payload.name);
+		if (existingRole && existingRole.tenantId === tenantId) {
+			throw new BadRequestException('Role name already exists in this tenant');
+		}
 
-        try {
-            await this.roleRepository.create(role);
-        } catch (error) {
-            throw error;
-        }
-    }
+		const role = new Role().new(payload.name, payload.description, payload.permissions, tenantId);
 
-    /**
-     * Update an existing role's details.
-     * @param id - The ID of the role to update.
-     * @param payload - The new data to update the role with.
-     * @returns A promise that resolves when the role has been updated.
-     * @throws NotFoundException if the role is not found.
-     */
-    async update(id: string, payload: UpdateRoleDto): Promise<void> {
-        const { tenantId } = getContext();
+		if (!role.validatePermissions()) {
+			throw new BadRequestException('Invalid permissions provided.');
+		}
 
-        const role = await this.roleRepository.getById(id);
-        if (!role) {
-            throw new NotFoundException(`Role with ID ${id} not found`);
-        }
-        
-        if (role.tenantId !== tenantId) {
-            throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
-        }
+		await this.roleRepository.create(role);
+	}
 
-        if (role.name.toLowerCase() === 'superadmin') {
-            throw new BadRequestException('Cannot update a superuser role.');
-        }
+	async update(id: string, payload: UpdateRoleDto): Promise<void> {
+		const tenantId = this.contextService.getTenantId();
 
-        role.name = payload.name || role.name;
-        role.description = payload.description || role.description;
+		const role = await this.roleRepository.getById(id);
+		if (!role) {
+			throw new NotFoundException(`Role with ID ${id} not found`);
+		}
 
-        if (payload.permissions) {
-            role.permissions = payload.permissions
+		if (role.tenantId !== tenantId) {
+			throw new ForbiddenException('Access denied to update this role');
+		}
 
-            if (!role.validatePermissions()) {
-                throw new BadRequestException('Invalid permissions provided.');
-            }
-        }
+		if (role.name.toLowerCase() === 'superadmin') {
+			throw new BadRequestException('Cannot update a superuser role.');
+		}
 
-        await this.roleRepository.update(id, role);
-    }
+		role.name = payload.name ?? role.name;
+		role.description = payload.description ?? role.description;
 
-    /**
-     * Delete a role by its ID.
-     * @param id - The ID of the role to delete.
-     * @returns A promise that resolves when the role has been deleted.
-     * @throws NotFoundException if the role is not found.
-     */
-    async delete(id: string): Promise<void> {
-        const { isSuperUser, tenantId } = getContext();
+		if (payload.permissions) {
+			role.permissions = payload.permissions;
 
-        const role = await this.roleRepository.getById(id);
-        if (!role) {
-            throw new NotFoundException(`Role with ID ${id} not found`);
-        }
+			if (!role.validatePermissions()) {
+				throw new BadRequestException('Invalid permissions provided.');
+			}
+		}
 
-        const users = await this.userRepository.getAllByRoleId(id);
-        if (users.length > 0) throw new BadRequestException('Role masih digunakan oleh user');
+		await this.roleRepository.update(id, role);
+	}
 
-        if (!isSuperUser && role.tenantId !== tenantId) {
-            throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
-        }
+	async delete(id: string): Promise<void> {
+		const tenantId = this.contextService.getTenantId();
+		const isSuperUser = this.contextService.isSuperUser();
 
-        // Delete the role
-        await this.roleRepository.delete(id);
-    }
+		const role = await this.roleRepository.getById(id);
+		if (!role) {
+			throw new NotFoundException(`Role with ID ${id} not found`);
+		}
+
+		if (!isSuperUser && role.tenantId !== tenantId) {
+			throw new ForbiddenException('Access denied to delete this role');
+		}
+
+		const users = await this.userRepository.getAllByRoleId(id);
+		if (users.length > 0) {
+			throw new BadRequestException('Role masih digunakan oleh user');
+		}
+
+		await this.roleRepository.delete(id);
+	}
 }

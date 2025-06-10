@@ -7,19 +7,17 @@ import { TENANT_REPOSITORY, TENANT_SERVICE } from 'src/common/constant';
 import { TenantRepository } from './infrastructure/presistence/tenant.repository';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Tenant]),
-    ],
-    controllers: [TenantController],
-    providers: [
-        {
-            provide: TENANT_SERVICE,
-            useClass: TenantService,
-        },
-        {
-            provide: TENANT_REPOSITORY,
-            useClass: TenantRepository,
-        },
-    ],
+	imports: [TypeOrmModule.forFeature([Tenant])],
+	controllers: [TenantController],
+	providers: [
+		{
+			provide: TENANT_SERVICE,
+			useClass: TenantService,
+		},
+		{
+			provide: TENANT_REPOSITORY,
+			useClass: TenantRepository,
+		},
+	],
 })
-export class TenantModule { }
+export class TenantModule {}
