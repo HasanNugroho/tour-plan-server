@@ -33,6 +33,10 @@ export class UserRepository implements IUserRepository {
     async getByUsername(username: string): Promise<User | null> {
         return this.db.findOne({ where: { username } });
     }
+    
+    async getAllByRoleId(roleId: string): Promise<User[]> {
+        return this.db.find({ where: { role_id: roleId } });
+    }
 
     async update(id: string, userData: Partial<User>): Promise<User> {
         const existingUser = await this.db.findOne({ where: { id } });

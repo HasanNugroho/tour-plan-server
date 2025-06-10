@@ -23,6 +23,13 @@ export interface IUserRepository {
     getByUsername(username: string): Promise<User | null>;
 
     /**
+     * @param roleId - The roleId of the users to fetch 
+     * 
+     * @returns The user with the given roleId, or null if not found
+     */
+    getAllByRoleId(roleId: string): Promise<User[]>
+
+    /**
      * @param user - The user to create
      * 
      * @returns The created user

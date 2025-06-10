@@ -1,17 +1,20 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { IRoleRepository } from '../../domain/repository/role.repository.interface';
 import { IRoleService } from '../../domain/service/role.service.interface';
-import { ROLE_REPOSITORY } from 'src/common/constant';
+import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { getContext } from 'src/common/context/request-context.service';
+import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
 
 @Injectable()
 export class RoleService implements IRoleService {
     constructor(
         @Inject(ROLE_REPOSITORY)
         private readonly roleRepository: IRoleRepository,
+        @Inject(USER_REPOSITORY)
+        private readonly userRepository: IUserRepository,
     ) { }
 
 
@@ -49,10 +52,6 @@ export class RoleService implements IRoleService {
             isSuperUser ? null : (tenantId ?? null)
         );
 
-        if (totalCount === 0) {
-            throw new NotFoundException('No roles found');
-        }
-
         return { roles, totalCount };
     }
 
@@ -67,6 +66,11 @@ export class RoleService implements IRoleService {
 
         if (payload.name.toLowerCase() === 'superadmin') {
             throw new BadRequestException('Cannot create a superuser role.');
+        }
+
+        const existingRole = await this.roleRepository.getByName(payload.name);
+        if (existingRole && existingRole.tenantId !== tenantId) {
+            throw new BadRequestException('Role name already exists in this tenant');
         }
 
         const role = new Role().new(
@@ -106,6 +110,10 @@ export class RoleService implements IRoleService {
             throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
         }
 
+        if (role.name.toLowerCase() === 'superadmin') {
+            throw new BadRequestException('Cannot update a superuser role.');
+        }
+
         role.name = payload.name || role.name;
         role.description = payload.description || role.description;
 
@@ -127,14 +135,17 @@ export class RoleService implements IRoleService {
      * @throws NotFoundException if the role is not found.
      */
     async delete(id: string): Promise<void> {
-        const { tenantId } = getContext();
+        const { isSuperUser, tenantId } = getContext();
 
         const role = await this.roleRepository.getById(id);
         if (!role) {
             throw new NotFoundException(`Role with ID ${id} not found`);
         }
 
-        if (role.tenantId !== tenantId) {
+        const users = await this.userRepository.getAllByRoleId(id);
+        if (users.length > 0) throw new BadRequestException('Role masih digunakan oleh user');
+
+        if (!isSuperUser && role.tenantId !== tenantId) {
             throw new ForbiddenException('You do not have permission to modify roles outside your tenant');
         }
 

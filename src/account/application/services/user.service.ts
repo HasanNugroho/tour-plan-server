@@ -64,6 +64,11 @@ export class UserService implements IUserService {
         const role = await this.roleRepository.getById(payload.role_id);
         if (!role) throw new BadRequestException('Invalid role');
 
+        // For non-superadmin actor, make sure role belongs to the same tenant
+        if (!isSuperUser && role.tenantId !== actorTenantId) {
+            throw new UnauthorizedException('Cannot assign role from another tenant');
+        }
+
         const isSuperAdminRole = role.name.toLowerCase() === 'superadmin';
 
         // Superadmin-specific logic
@@ -92,11 +97,6 @@ export class UserService implements IUserService {
             throw new BadRequestException('Username is already in use in this tenant');
         }
 
-        // For non-superadmin actor, make sure role belongs to the same tenant
-        if (!isSuperUser && role.tenantId !== actorTenantId) {
-            throw new UnauthorizedException('Cannot assign role from another tenant');
-        }
-
         const user = await new User().new(
             payload.fullname,
             payload.username,
@@ -118,14 +118,12 @@ export class UserService implements IUserService {
             throw new NotFoundException(`User with ID ${userId} not found`);
         }
 
-        if (!isSuperUser) {
-            if (user.tenantId !== tenantId) {
-                throw new ForbiddenException('You do not have permission to change role of users outside your tenant');
-            }
-
-            if (user.id === actorId) {
-                throw new ForbiddenException('You cannot change your own role');
-            }
+        if (!isSuperUser && user.tenantId !== tenantId) {
+            throw new ForbiddenException('You do not have permission to change role of users outside your tenant');
+        }
+        
+        if (user.id === actorId) {
+            throw new ForbiddenException('You cannot change your own role');
         }
 
         const role = await this.roleRepository.getById(roleId);
@@ -145,14 +143,12 @@ export class UserService implements IUserService {
             throw new NotFoundException(`User with ID ${userId} not found`);
         }
 
-        if (!isSuperUser) {
-            if (user.tenantId !== tenantId) {
-                throw new ForbiddenException('You do not have permission to change status of users outside your tenant');
-            }
+        if (!isSuperUser && user.tenantId !== tenantId) {
+            throw new ForbiddenException('You do not have permission to change status of users outside your tenant');
+        }
 
-            if (user.id === actorId) {
-                throw new ForbiddenException('You cannot change your own status');
-            }
+        if (user.id === actorId) {
+            throw new ForbiddenException('You cannot change your own status');
         }
 
         user.is_active = isActive;
@@ -168,7 +164,6 @@ export class UserService implements IUserService {
             throw new NotFoundException(`User with ID ${id} not found`);
         }
 
-
         if (!isSuperUser && user.tenantId !== tenantId) {
             throw new ForbiddenException('You do not have permission to modify users outside your tenant');
         }
@@ -183,6 +178,11 @@ export class UserService implements IUserService {
             if (isTargetRoleSuperAdmin && !isSuperUser) {
                 throw new ForbiddenException('Cannot assign SUPERADMIN role');
             }
+
+            if (!isSuperUser && targetRole.tenantId !== user.tenantId) {
+                throw new ForbiddenException('Cannot assign role from another tenant');
+            }
+
 
             user.role_id = userData.role_id;
         }
@@ -220,9 +220,20 @@ export class UserService implements IUserService {
 
     // Method to delete a user by ID
     async delete(id: string): Promise<void> {
+        const { tenantId, isSuperUser, userId: actorId } = getContext();
+
         const user = await this.userRepository.getById(id);
         if (!user) {
             throw new NotFoundException(`User with ID ${id} not found`);
+        }
+
+        if (user.id === actorId && isSuperUser) {
+            throw new ForbiddenException('Cannot delete yourself as superuser');
+        }
+
+
+        if (!isSuperUser && user.tenantId !== tenantId) {
+            throw new ForbiddenException('You do not have permission to delete users outside your tenant');
         }
 
         try {
