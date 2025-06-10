@@ -1,198 +1,283 @@
 import { UserService } from './user.service';
 import {
     BadRequestException,
-    InternalServerErrorException,
+    ForbiddenException,
     NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
-import { TestBed, Mocked } from '@suites/unit';
-import { USER_REPOSITORY } from 'src/common/constant';
+import { USER_REPOSITORY, ROLE_REPOSITORY } from 'src/common/constant';
 import { User } from 'src/account/domain/user';
+import { TestBed } from '@suites/unit';
 import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
+import { IRoleRepository } from 'src/account/domain/repository/role.repository.interface';
 import {
     CreateUserDto,
     UpdateUserDto,
 } from 'src/account/presentation/dto/user.dto';
 
+// Mock getContext
+jest.mock('src/common/context/request-context.service', () => ({
+    getContext: jest.fn(),
+}));
+
+import { getContext } from 'src/common/context/request-context.service';
+import { Role } from 'src/account/domain/role';
+
 describe('UserService', () => {
     let service: UserService;
-    let repository: Mocked<IUserRepository>;
+    let userRepository: jest.Mocked<IUserRepository>;
+    let roleRepository: jest.Mocked<IRoleRepository>;
 
     beforeEach(async () => {
         const { unit, unitRef } = await TestBed.solitary(UserService).compile();
 
         service = unit;
-        repository = unitRef.get(USER_REPOSITORY);
-    });
+        userRepository = unitRef.get(USER_REPOSITORY);
+        roleRepository = unitRef.get(ROLE_REPOSITORY);
 
-    describe('getById', () => {
-        it('should return user when found by id', async () => {
-            const user = new User();
-            repository.getById.mockResolvedValueOnce(user);
-
-            const result = await service.getById('user-id');
-
-            expect(result).toBe(user);
-            expect(repository.getById).toHaveBeenCalledWith('user-id');
-        });
-
-        it('should throw NotFoundException if not found', async () => {
-            repository.getById.mockResolvedValueOnce(null);
-            await expect(service.getById('missing')).rejects.toThrow(NotFoundException);
-        });
-
-        it('should throw InternalServerErrorException on repository failure', async () => {
-            repository.getById.mockRejectedValueOnce(new InternalServerErrorException());
-            await expect(service.getById('error')).rejects.toThrow(InternalServerErrorException);
-        });
-    });
-
-    describe('getByEmail', () => {
-        it('should return user when found', async () => {
-            const user = new User();
-            repository.getByEmail.mockResolvedValueOnce(user);
-
-            const result = await service.getByEmail('test@example.com');
-
-            expect(result).toBe(user);
-            expect(repository.getByEmail).toHaveBeenCalledWith('test@example.com');
-        });
-
-        it('should throw NotFoundException if not found', async () => {
-            repository.getByEmail.mockResolvedValueOnce(null);
-            await expect(service.getByEmail('notfound@example.com')).rejects.toThrow(NotFoundException);
-        });
-
-        it('should throw InternalServerErrorException on error', async () => {
-            repository.getByEmail.mockRejectedValueOnce(new InternalServerErrorException());
-            await expect(service.getByEmail('fail@example.com')).rejects.toThrow(InternalServerErrorException);
-        });
-    });
-
-    describe('getByUsername', () => {
-        it('should return user when found', async () => {
-            const user = new User();
-            repository.getByUsername.mockResolvedValueOnce(user);
-
-            const result = await service.getByUsername('user');
-
-            expect(result).toBe(user);
-            expect(repository.getByUsername).toHaveBeenCalledWith('user');
-        });
-
-        it('should throw NotFoundException if not found', async () => {
-            repository.getByUsername.mockResolvedValueOnce(null);
-            await expect(service.getByUsername('notfound')).rejects.toThrow(NotFoundException);
-        });
-
-        it('should throw InternalServerErrorException on error', async () => {
-            repository.getByUsername.mockRejectedValueOnce(new InternalServerErrorException());
-            await expect(service.getByUsername('fail')).rejects.toThrow(InternalServerErrorException);
-        });
+        jest.clearAllMocks();
     });
 
     describe('create', () => {
-        it('should create and return new user', async () => {
-            const dto: CreateUserDto = {
-                username: 'newuser',
-                email: 'new@example.com',
-                name: 'New',
-                fullname: 'New Full',
-                password: 'password123',
-            };
+        const dto: CreateUserDto = {
+            username: 'newuser',
+            email: 'new@example.com',
+            fullname: 'New Full',
+            password: 'password123',
+            role_id: 'role_id',
+        };
 
-            const saved = new User();
-            saved.id = 'user-id';
-            saved.email = dto.email;
+        it('should create a new tenant-bound user when context is valid', async () => {
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
 
-            repository.getByEmail.mockResolvedValueOnce(null);
-            repository.create.mockResolvedValueOnce(saved);
+            const role = new Role().new("admin", "desc", ["permission:a"], "tenant1");
+            roleRepository.getById.mockResolvedValue(role);
+            userRepository.getByEmail.mockResolvedValue(null);
+            userRepository.getByUsername.mockResolvedValue(null);
+            userRepository.create.mockResolvedValue(new User);
 
-            const result = await service.create(dto);
+            await service.create(dto);
 
-            expect(result).toBeUndefined();
-            expect(repository.getByEmail).toHaveBeenCalledWith(dto.email);
-            expect(repository.create).toHaveBeenCalled();
+            expect(userRepository.create).toHaveBeenCalled();
         });
 
-        it('should throw BadRequestException if email already exists', async () => {
-            repository.getByEmail.mockResolvedValueOnce(new User());
-            await expect(service.create({
-                username: 'user',
-                email: 'duplicate@example.com',
-                name: 'dup',
-                fullname: 'dup user',
-                password: 'pwd',
-            })).rejects.toThrow(BadRequestException);
+        it('should throw UnauthorizedException if assigning role from another tenant', async () => {
+            const role = new Role().new("admin", "desc", ["permission:a"], "other-tenant");
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
+
+            roleRepository.getById.mockResolvedValue(role);
+
+            await expect(service.create(dto)).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('should throw BadRequestException if creating duplicate email', async () => {
+            const role = new Role().new("admin", "desc", ["permission:a"], "tenant1");
+            const existingUser = new User();
+            existingUser.tenantId = 'tenant1';
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
+
+            roleRepository.getById.mockResolvedValue(role);
+            userRepository.getByEmail.mockResolvedValue(existingUser);
+
+            await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if creating duplicate username', async () => {
+            const role = new Role().new("admin", "desc", ["permission:a"], "tenant1");
+            const existingUser = new User();
+            existingUser.tenantId = 'tenant1';
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
+
+            roleRepository.getById.mockResolvedValue(role);
+            userRepository.getByEmail.mockResolvedValue(null);
+            userRepository.getByUsername.mockResolvedValue(existingUser);
+
+            await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw if non-superuser tries to create superadmin', async () => {
+            const role = new Role().new("superadmin", "desc", ["permission:a"], null);
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
+
+            roleRepository.getById.mockResolvedValue(role);
+
+            await expect(service.create({ ...dto, role_id: role.id })).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('should throw if superadmin user is associated with tenant', async () => {
+            const role = new Role().new("superadmin", "desc", ["permission:a"], null);
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'any-tenant',
+                isSuperUser: true,
+                userId: 'actor1',
+            });
+
+            roleRepository.getById.mockResolvedValue(role);
+
+            await expect(service.create({ ...dto, tenantId: 'some-tenant', role_id: role.id })).rejects.toThrow(BadRequestException);
         });
     });
 
-    describe('update', () => {
-        it('should update user when data is valid', async () => {
+    describe('changeRole', () => {
+        it('should change role if authorized', async () => {
             const user = new User();
-            user.id = 'id';
-            user.email = 'user@example.com';
-            user.chiper_text = 'oldpass';
+            user.id = 'user1';
+            user.tenantId = 'tenant1';
 
-            const dto: UpdateUserDto = {
-                email: 'user@example.com',
-                name: 'Updated Name',
-                fullname: 'Updated Fullname',
-                password: 'newpass',
-            };
+            const role = new Role().new("admin", "desc", ["permission:a"], "tenant1");
 
-            repository.getById.mockResolvedValueOnce(user);
-            repository.update.mockResolvedValueOnce(user);
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor1',
+            });
 
-            const result = await service.update('id', dto);
+            userRepository.getById.mockResolvedValue(user);
+            roleRepository.getById.mockResolvedValue(role);
 
-            expect(result).toBe(undefined);
-            expect(repository.update).toHaveBeenCalled();
+            await service.changeRole('user1', 'new-role');
+
+            expect(userRepository.update).toHaveBeenCalledWith('user1', expect.objectContaining({ role_id: 'new-role' }));
         });
 
-        it('should allow email change if email is not taken', async () => {
+        it('should throw if trying to change own role', async () => {
             const user = new User();
-            user.id = 'id';
-            user.email = 'old@example.com';
-            user.chiper_text = 'oldpass';
+            user.id = 'user1';
+            user.tenantId = 'tenant1';
 
-            const dto: UpdateUserDto = {
-                email: 'new@example.com',
-                name: 'Updated',
-                fullname: 'Updated Fullname',
-                password: 'pwd',
-            };
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: true,
+                userId: 'user1',
+            });
 
-            repository.getById.mockResolvedValueOnce(user);
-            repository.getByEmail.mockResolvedValueOnce(null);
-            repository.update.mockResolvedValueOnce(user);
+            userRepository.getById.mockResolvedValue(user);
 
-            const result = await service.update('id', dto);
+            await expect(service.changeRole('user1', 'role')).rejects.toThrow(ForbiddenException);
+        });
+    });
 
-            expect(result).toBeUndefined();
-            expect(repository.getByEmail).toHaveBeenCalledWith('new@example.com');
+    describe('toggleStatus', () => {
+        it('should toggle status if authorized', async () => {
+            const user = new User();
+            user.id = 'user-id';
+            user.tenantId = 'tenant1';
+
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor-id',
+            });
+
+            userRepository.getById.mockResolvedValue(user);
+            userRepository.update.mockResolvedValue(user);
+
+            await service.toggleStatus('user-id', false);
+
+            expect(userRepository.update).toHaveBeenCalled();
         });
 
-        it('should throw BadRequestException if updated email is taken', async () => {
-            const currentUser = new User();
-            currentUser.id = 'id';
-            currentUser.email = 'old@example.com';
-            currentUser.chiper_text = 'oldpass';
+        it('should throw if user tries to toggle own status', async () => {
+            const user = new User();
+            user.id = 'user-id';
+            user.tenantId = 'tenant1';
 
-            const anotherUser = new User();
-            anotherUser.id = 'other-id';
-            anotherUser.email = 'new@example.com';
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: true,
+                userId: 'user-id',
+            });
 
-            const dto: UpdateUserDto = {
-                email: 'new@example.com',
-                name: 'Dup',
-                fullname: 'Dup Full',
+            userRepository.getById.mockResolvedValue(user);
+
+            await expect(service.toggleStatus('user-id', false)).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('delete', () => {
+        it('should delete another user within tenant', async () => {
+            const user = new User();
+            user.id = 'target-id';
+            user.tenantId = 'tenant1';
+
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: 'tenant1',
+                isSuperUser: false,
+                userId: 'actor-id',
+            });
+
+            userRepository.getById.mockResolvedValue(user);
+            userRepository.delete.mockResolvedValue(undefined);
+
+            await service.delete('target-id');
+
+            expect(userRepository.delete).toHaveBeenCalledWith('target-id');
+        });
+
+        it('should not allow superuser to delete themselves', async () => {
+            const user = new User();
+            user.id = 'actor-id';
+            user.tenantId = null;
+
+            (getContext as jest.Mock).mockReturnValue({
+                tenantId: null,
+                isSuperUser: true,
+                userId: 'actor-id',
+            });
+
+            userRepository.getById.mockResolvedValue(user);
+
+            await expect(service.delete('actor-id')).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('setupSuperUser', () => {
+        it('should throw if superuser already exists', async () => {
+            userRepository.getSuperUser.mockResolvedValue(new User());
+
+            await expect(service.setupSuperUser({
+                username: 'super',
+                email: 'super@example.com',
+                fullname: 'Super Admin',
                 password: 'pwd',
-            };
+                role_id: 'role',
+            })).rejects.toThrow(BadRequestException);
+        });
 
-            repository.getById.mockResolvedValueOnce(currentUser);
-            repository.getByEmail.mockResolvedValueOnce(anotherUser);
+        it('should create a superuser if not exists', async () => {
+            userRepository.getSuperUser.mockResolvedValue(null);
+            roleRepository.getByName.mockResolvedValue(new Role);
+            userRepository.create.mockResolvedValue(new User);
 
-            await expect(service.update('id', dto)).rejects.toThrow(BadRequestException);
+            await service.setupSuperUser({
+                username: 'super',
+                email: 'super@example.com',
+                fullname: 'Super Admin',
+                password: 'pwd',
+                role_id: 'role',
+            });
+
+            expect(userRepository.create).toHaveBeenCalled();
         });
     });
 });

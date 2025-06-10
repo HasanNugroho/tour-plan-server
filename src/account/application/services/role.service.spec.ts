@@ -1,87 +1,123 @@
 import { TestBed, Mocked } from '@suites/unit';
-import { BadRequestException, LoggerService, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { IRoleRepository } from '../../domain/repository/role.repository.interface';
+import { IUserRepository } from '../../domain/repository/user.repository.interface';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { Order } from 'src/common/enums/order.enum';
-import { RoleRepository } from 'src/account/infrastructure/presistence/role.repository';
-import { ROLE_REPOSITORY } from 'src/common/constant';
-import { Logger } from 'winston';
+import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
+
+jest.mock('src/common/context/request-context.service', () => ({
+    getContext: jest.fn(),
+}));
+import { getContext } from 'src/common/context/request-context.service';
+import { User } from 'src/account/domain/user';
 
 describe('RoleService', () => {
     let service: RoleService;
-    let repository: Mocked<IRoleRepository>;
+    let roleRepository: Mocked<IRoleRepository>;
+    let userRepository: Mocked<IUserRepository>;
 
     beforeEach(async () => {
         const { unit, unitRef } = await TestBed.solitary(RoleService).compile();
 
         service = unit;
-        repository = unitRef.get(ROLE_REPOSITORY);
+        roleRepository = unitRef.get(ROLE_REPOSITORY);
+        userRepository = unitRef.get(USER_REPOSITORY);
+        jest.clearAllMocks();
     });
 
     describe('getById', () => {
-        it('should return role when found', async () => {
+        it('should return role when found and tenant matches', async () => {
             const role = new Role();
-            role.name = 'admin';
-            role.description = 'admin desc';
-            role.access = JSON.stringify(["manage:system", "roles:create", "roles:read"]);
+            role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
 
-            repository.getById.mockResolvedValueOnce(role);
+            roleRepository.getById.mockResolvedValueOnce(role);
 
             const result = await service.getById('role-id');
-
             expect(result).toBe(role);
-            expect(repository.getById).toHaveBeenCalledWith('role-id');
         });
 
         it('should throw NotFoundException if role not found', async () => {
-            repository.getById.mockResolvedValueOnce(null);
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
+            roleRepository.getById.mockResolvedValueOnce(null);
             await expect(service.getById('missing-id')).rejects.toThrow(NotFoundException);
+        });
+
+        it('should throw ForbiddenException if tenant mismatch', async () => {
+            const role = new Role();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-2';
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
+            roleRepository.getById.mockResolvedValueOnce(role);
+            await expect(service.getById('role-id')).rejects.toThrow(ForbiddenException);
         });
     });
 
     describe('getAll', () => {
-        it('should return paginated roles', async () => {
+        it('should return paginated roles for tenant', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
             const role = new Role();
-            role.name = 'admin';
-            role.description = 'desc';
-            role.access = JSON.stringify(["roles:read"]);
-
+            role.tenantId = 'tenant-1';
             const filter = new PaginationOptionsDto();
-            filter.page = 1;
-            filter.limit = 10;
-            filter.order = Order.ASC;
-            filter.orderby = 'created_at';
-
-            repository.getAll.mockResolvedValueOnce({ roles: [role], totalCount: 1 });
+            roleRepository.getAll.mockResolvedValueOnce({ roles: [role], totalCount: 1 });
 
             const result = await service.getAll(filter);
-
             expect(result.roles).toHaveLength(1);
-            expect(repository.getAll).toHaveBeenCalledWith(filter);
+            expect(roleRepository.getAll).toHaveBeenCalledWith(filter, 'tenant-1');
+        });
+
+        it('should return all roles for superuser', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: true });
+            const role = new Role();
+            roleRepository.getAll.mockResolvedValueOnce({ roles: [role], totalCount: 1 });
+
+            const filter = new PaginationOptionsDto();
+            const result = await service.getAll(filter);
+            expect(roleRepository.getAll).toHaveBeenCalledWith(filter, null);
         });
     });
 
     describe('create', () => {
         it('should create role with valid permissions', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
             const dto = new CreateRoleDto();
             dto.name = 'admin';
             dto.description = 'desc';
-            dto.access = ['roles:create', 'roles:read'];
+            dto.permissions = ['roles:create', 'roles:read'];
 
-            repository.create.mockImplementation(async (role) => role);
+            roleRepository.getByName.mockResolvedValueOnce(null);
+            // Assume Role.prototype.validatePermissions returns true
+            jest.spyOn(Role.prototype, 'validatePermissions').mockReturnValue(true);
+            roleRepository.create.mockResolvedValueOnce(new Role());
 
             await expect(service.create(dto)).resolves.not.toThrow();
-            expect(repository.create).toHaveBeenCalled();
+            expect(roleRepository.create).toHaveBeenCalled();
         });
 
-        it('should throw BadRequestException on invalid permission', async () => {
+        it('should throw BadRequestException on superadmin name', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
+            const dto = new CreateRoleDto();
+            dto.name = 'superadmin';
+            dto.description = 'desc';
+            dto.permissions = ['roles:create'];
+
+            await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException on invalid permissions', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
             const dto = new CreateRoleDto();
             dto.name = 'admin';
             dto.description = 'desc';
-            dto.access = ['roles:slice']; // invalid
+            dto.permissions = ['invalid:perm'];
+
+            roleRepository.getByName.mockResolvedValueOnce(null);
+            jest.spyOn(Role.prototype, 'validatePermissions').mockReturnValue(false);
 
             await expect(service.create(dto)).rejects.toThrow(BadRequestException);
         });
@@ -89,46 +125,88 @@ describe('RoleService', () => {
 
     describe('update', () => {
         it('should update role with valid data', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
             const role = new Role();
             role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            role.name = 'admin';
+            jest.spyOn(Role.prototype, 'validatePermissions').mockReturnValue(true);
 
-            repository.getById.mockResolvedValueOnce(role);
-            repository.update.mockResolvedValueOnce();
+            roleRepository.getById.mockResolvedValueOnce(role);
+            roleRepository.update.mockResolvedValueOnce(undefined);
 
             await expect(service.update('role-id', { name: 'Updated' })).resolves.not.toThrow();
-            expect(repository.update).toHaveBeenCalled();
+            expect(roleRepository.update).toHaveBeenCalled();
         });
 
-        it('should throw if permission is invalid', async () => {
+        it('should throw ForbiddenException if tenant mismatch', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
             const role = new Role();
             role.id = 'role-id';
-            repository.getById.mockResolvedValueOnce(role);
+            role.tenantId = 'tenant-2';
+            roleRepository.getById.mockResolvedValueOnce(role);
 
-            const updateDto = new UpdateRoleDto();
-            updateDto.access = ['roles:slice']; // invalid
-
-            await expect(service.update('role-id', updateDto)).rejects.toThrow(BadRequestException);
+            await expect(service.update('role-id', { name: 'Updated' })).rejects.toThrow(ForbiddenException);
         });
 
-        it('should throw NotFoundException if role missing', async () => {
-            repository.getById.mockResolvedValueOnce(null);
-            await expect(service.update('missing-id', {})).rejects.toThrow(NotFoundException);
+        it('should throw BadRequestException if updating superadmin', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
+            const role = new Role();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            role.name = 'superadmin';
+            roleRepository.getById.mockResolvedValueOnce(role);
+
+            await expect(service.update('role-id', { name: 'Updated' })).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException if permissions invalid', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1' });
+            const role = new Role();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            role.name = 'admin';
+            roleRepository.getById.mockResolvedValueOnce(role);
+            jest.spyOn(Role.prototype, 'validatePermissions').mockReturnValue(false);
+
+            await expect(service.update('role-id', { permissions: ['invalid:perm'] })).rejects.toThrow(BadRequestException);
         });
     });
 
     describe('delete', () => {
-        it('should delete role when exists', async () => {
+        it('should delete role when exists and not used', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
             const role = new Role();
-            repository.getById.mockResolvedValueOnce(role);
-            repository.delete.mockResolvedValueOnce();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            roleRepository.getById.mockResolvedValueOnce(role);
+            userRepository.getAllByRoleId.mockResolvedValueOnce([]);
+            roleRepository.delete.mockResolvedValueOnce(undefined);
 
             await expect(service.delete('role-id')).resolves.not.toThrow();
-            expect(repository.delete).toHaveBeenCalledWith('role-id');
+            expect(roleRepository.delete).toHaveBeenCalledWith('role-id');
         });
 
-        it('should throw NotFoundException when role does not exist', async () => {
-            repository.getById.mockResolvedValueOnce(null);
-            await expect(service.delete('missing-id')).rejects.toThrow(NotFoundException);
+        it('should throw BadRequestException if role used by user', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
+            const role = new Role();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-1';
+            roleRepository.getById.mockResolvedValueOnce(role);
+            userRepository.getAllByRoleId.mockResolvedValueOnce([new User(), new User()]);
+
+            await expect(service.delete('role-id')).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw ForbiddenException if tenant mismatch', async () => {
+            (getContext as jest.Mock).mockReturnValue({ tenantId: 'tenant-1', isSuperUser: false });
+            const role = new Role();
+            role.id = 'role-id';
+            role.tenantId = 'tenant-2';
+            roleRepository.getById.mockResolvedValueOnce(role);
+            userRepository.getAllByRoleId.mockResolvedValueOnce([]);
+
+            await expect(service.delete('role-id')).rejects.toThrow(ForbiddenException);
         });
     });
 });
