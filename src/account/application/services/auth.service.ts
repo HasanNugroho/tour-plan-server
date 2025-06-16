@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
-import { IUserRepository } from '../../domain/repository/user.repository.interface';
+import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { USER_REPOSITORY } from 'src/common/constant';
-import { IAuthService } from '../../domain/service/auth.service.interface';
+import { IAuthService } from '../../domain/interface/auth.service.interface';
 import { Credential, CredentialResponse } from '../../domain/credential';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';

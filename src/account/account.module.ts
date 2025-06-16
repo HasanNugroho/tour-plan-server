@@ -19,6 +19,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './application/services/auth.service';
 import { AuthController } from './presentation/auth.controller';
+import { RequestContextModule } from 'src/common/context/request-context.module';
 
 @Module({
 	imports: [
@@ -31,6 +32,7 @@ import { AuthController } from './presentation/auth.controller';
 			}),
 			inject: [ConfigService],
 		}),
+        RequestContextModule
 	],
 	controllers: [UserController, RoleController, AuthController],
 	providers: [

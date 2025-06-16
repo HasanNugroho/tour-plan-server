@@ -5,9 +5,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Tenant } from './domain/tenant';
 import { TENANT_REPOSITORY, TENANT_SERVICE } from 'src/common/constant';
 import { TenantRepository } from './infrastructure/presistence/tenant.repository';
+import { RequestContextModule } from 'src/common/context/request-context.module';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Tenant])],
+	imports: [
+        TypeOrmModule.forFeature([Tenant]),
+        RequestContextModule
+    ],
 	controllers: [TenantController],
 	providers: [
 		{

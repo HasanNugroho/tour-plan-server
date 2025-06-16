@@ -10,7 +10,7 @@ import {
 	Put,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { IUserService } from '../domain/service/user.service.interface';
+import { IUserService } from '../domain/interface/user.service.interface';
 import { User } from '../domain/user';
 import {
 	ApiOperation,
@@ -22,7 +22,7 @@ import {
 	ApiTags,
 } from '@nestjs/swagger';
 import { USER_SERVICE } from 'src/common/constant';
-import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { CreateUserDto, SetupSuperUserDto, UpdateUserDto } from './dto/user.dto';
 import { HttpResponse } from 'src/common/dtos/response.dto';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -94,7 +94,7 @@ export class UserController {
 	})
 	@Post('setup-superuser')
 	@Public()
-	async setupSuperUser(@Body() payload: CreateUserDto) {
+	async setupSuperUser(@Body() payload: SetupSuperUserDto) {
 		try {
 			await this.userService.setupSuperUser(payload);
 			return new HttpResponse(HttpStatus.CREATED, true, 'superuser created successfully');

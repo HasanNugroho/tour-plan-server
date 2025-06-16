@@ -1,6 +1,6 @@
 import { TestBed, Mocked } from '@suites/unit';
 import { AuthService } from './auth.service';
-import { IUserRepository } from '../../domain/repository/user.repository.interface';
+import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { USER_REPOSITORY } from 'src/common/constant';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';

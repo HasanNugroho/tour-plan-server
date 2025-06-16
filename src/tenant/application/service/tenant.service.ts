@@ -5,8 +5,8 @@ import {
 	ForbiddenException,
 	Inject,
 } from '@nestjs/common';
-import { ITenantService } from '../../domain/service/tenant.service.interface';
-import { ITenantRepository } from '../../domain/repository/tenant.repository.interface';
+import { ITenantService } from '../../domain/interface/tenant.service.interface';
+import { ITenantRepository } from '../../domain/interface/tenant.repository.interface';
 import { Tenant } from '../../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../../domain/dto/tenant.dto';
 import { TENANT_REPOSITORY } from 'src/common/constant';

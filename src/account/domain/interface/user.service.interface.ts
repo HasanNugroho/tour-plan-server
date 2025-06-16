@@ -77,5 +77,5 @@ export interface IUserService {
 	 * @returns A promise that resolves when the super user is created.
 	 * @throws BadRequestException if one already exists.
 	 */
-	setupSuperUser(payload: CreateUserDto): Promise<void>;
+	setupSuperUser(payload: Omit<CreateUserDto, 'tenantId' | 'role_id'>): Promise<void>;
 }

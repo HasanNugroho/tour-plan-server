@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateUserDto {
@@ -80,3 +80,5 @@ export class UpdateUserDto {
 	@IsOptional()
 	password?: string;
 }
+
+export class SetupSuperUserDto extends OmitType(CreateUserDto, ['tenantId', 'role_id'] as const) {}

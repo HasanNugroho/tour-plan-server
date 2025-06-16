@@ -67,7 +67,7 @@ import Redis from 'ioredis';
 			provide: APP_GUARD,
 			useClass: AuthGuard,
 		},
-		Logger,
+		Logger
 	],
 })
 export class AppModule implements NestModule {

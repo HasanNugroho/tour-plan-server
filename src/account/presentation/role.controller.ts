@@ -14,7 +14,7 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { ROLE_SERVICE } from 'src/common/constant';
-import { IRoleService } from '../domain/service/role.service.interface';
+import { IRoleService } from '../domain/interface/role.service.interface';
 import {
 	ApiBadRequestResponse,
 	ApiBearerAuth,

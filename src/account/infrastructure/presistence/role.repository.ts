@@ -1,11 +1,7 @@
-import {
-	Injectable,
-	InternalServerErrorException,
-	NotFoundException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, In, IsNull, Repository } from 'typeorm';
-import { IRoleRepository } from 'src/account/domain/repository/role.repository.interface';
+import { IRoleRepository } from 'src/account/domain/interface/role.repository.interface';
 import { Role } from 'src/account/domain/role';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 

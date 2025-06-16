@@ -1,8 +1,8 @@
 import { TestBed, Mocked } from '@suites/unit';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { RoleService } from './role.service';
-import { IRoleRepository } from '../../domain/repository/role.repository.interface';
-import { IUserRepository } from '../../domain/repository/user.repository.interface';
+import { IRoleRepository } from '../../domain/interface/role.repository.interface';
+import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';

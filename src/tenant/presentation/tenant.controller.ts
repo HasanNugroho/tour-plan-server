@@ -20,7 +20,7 @@ import {
 	ApiBody,
 	ApiBearerAuth,
 } from '@nestjs/swagger';
-import { ITenantService } from '../domain/service/tenant.service.interface';
+import { ITenantService } from '../domain/interface/tenant.service.interface';
 import { TENANT_SERVICE } from 'src/common/constant';
 import { Tenant } from '../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../domain/dto/tenant.dto';

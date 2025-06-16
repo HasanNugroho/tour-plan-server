@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { User } from 'src/account/domain/user';
-import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
+import { IUserRepository } from 'src/account/domain/interface/user.repository.interface';
 
 @Injectable()
 export class UserRepository implements IUserRepository {

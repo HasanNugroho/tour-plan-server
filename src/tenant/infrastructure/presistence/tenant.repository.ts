@@ -3,7 +3,7 @@ import { Repository, ILike } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { Tenant } from 'src/tenant/domain/tenant';
-import { ITenantRepository } from 'src/tenant/domain/repository/tenant.repository.interface';
+import { ITenantRepository } from 'src/tenant/domain/interface/tenant.repository.interface';
 
 @Injectable()
 export class TenantRepository implements ITenantRepository {

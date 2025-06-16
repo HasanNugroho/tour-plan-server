@@ -5,9 +5,9 @@ import {
 	Injectable,
 	NotFoundException,
 } from '@nestjs/common';
-import { IRoleRepository } from '../../domain/repository/role.repository.interface';
-import { IRoleService } from '../../domain/service/role.service.interface';
-import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
+import { IRoleRepository } from '../../domain/interface/role.repository.interface';
+import { IRoleService } from '../../domain/interface/role.service.interface';
+import { IUserRepository } from 'src/account/domain/interface/user.repository.interface';
 import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';

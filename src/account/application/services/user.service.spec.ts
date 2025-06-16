@@ -1,14 +1,10 @@
 import { UserService } from './user.service';
-import {
-	BadRequestException,
-	ForbiddenException,
-	UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { USER_REPOSITORY, ROLE_REPOSITORY } from 'src/common/constant';
 import { User } from 'src/account/domain/user';
 import { TestBed } from '@suites/unit';
-import { IUserRepository } from 'src/account/domain/repository/user.repository.interface';
-import { IRoleRepository } from 'src/account/domain/repository/role.repository.interface';
+import { IUserRepository } from 'src/account/domain/interface/user.repository.interface';
+import { IRoleRepository } from 'src/account/domain/interface/role.repository.interface';
 import { CreateUserDto } from 'src/account/presentation/dto/user.dto';
 
 // Mock getContext

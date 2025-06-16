@@ -6,9 +6,9 @@ import {
 	NotFoundException,
 	UnauthorizedException,
 } from '@nestjs/common';
-import { IUserService } from '../../domain/service/user.service.interface';
-import { IUserRepository } from '../../domain/repository/user.repository.interface';
-import { IRoleRepository } from 'src/account/domain/repository/role.repository.interface';
+import { IUserService } from '../../domain/interface/user.service.interface';
+import { IUserRepository } from '../../domain/interface/user.repository.interface';
+import { IRoleRepository } from 'src/account/domain/interface/role.repository.interface';
 import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { User } from '../../domain/user';
 import { CreateUserDto, UpdateUserDto } from '../../presentation/dto/user.dto';
@@ -209,7 +209,7 @@ export class UserService implements IUserService {
 		await this.userRepository.delete(id);
 	}
 
-	async setupSuperUser(payload: CreateUserDto): Promise<void> {
+	async setupSuperUser(payload: Omit<CreateUserDto, 'tenantId' | 'role_id'>): Promise<void> {
 		const exists = await this.userRepository.getSuperUser();
 		if (exists) {
 			throw new BadRequestException('Superuser already exists');

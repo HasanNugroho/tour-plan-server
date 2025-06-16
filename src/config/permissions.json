@@ -64,6 +64,5 @@
 		"system:manage_settings",
 		"system:view_logs",
 		"system:send_announcement"
-	],
-	"default_permission": ["users:read", "users:update", "roles:read"]
+	]
 }
