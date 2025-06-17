@@ -47,11 +47,15 @@ export class AuthGuard implements CanActivate {
 
 		const request = context.switchToHttp().getRequest();
 		const token = this.extractTokenFromHeader(request);
-		if (!token) throw new UnauthorizedException('Token not provided or malformed');
+		if (!token) {
+			throw new UnauthorizedException('Token not provided or malformed');
+		}
 
 		const blacklistKey = `blacklist:access-token:${token}`;
 		const isBlacklisted = await this.cacheManager.get(blacklistKey);
-		if (isBlacklisted) throw new UnauthorizedException('Token is blacklisted');
+		if (isBlacklisted) {
+			throw new UnauthorizedException('Token is blacklisted');
+		}
 
 		try {
 			const secret = this.configService.get<string>('jwt.secret');
@@ -61,15 +65,22 @@ export class AuthGuard implements CanActivate {
 			const role = await this.getRole(user.role_id);
 			role.permissions = role.permissions ?? defaultRoles;
 
-			if (roles.length && _.intersection(roles, role.permissions).length === 0) {
+			user.role = role;
+			request.user = user;
+
+			// Bypass all checks for system-level users
+			if (role.permissions.includes('manage:system')) {
+				return true;
+			}
+
+			// Check if user has required permissions
+			if (roles.length > 0 && _.intersection(roles, role.permissions).length === 0) {
 				throw new ForbiddenException('User does not have required roles');
 			}
 
-			user.role = role;
-			request.user = user;
 			return true;
 		} catch (error) {
-			throw new UnauthorizedException('Invalid or expired token', error);
+			throw new UnauthorizedException('Invalid or expired token');
 		}
 	}
 
