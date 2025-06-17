@@ -63,6 +63,9 @@
 
 		"system:manage_settings",
 		"system:view_logs",
-		"system:send_announcement"
-	]
+		"system:send_announcement",
+
+        "manage:system"
+	],
+	"default_permission": ["users:read", "users:update", "tours:read"]
 }

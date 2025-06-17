@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'async_hooks';
+import { Injectable } from '@nestjs/common';
 
 interface ContextData {
 	tenantId?: string;
@@ -8,25 +9,21 @@ interface ContextData {
 
 export const RequestContext = new AsyncLocalStorage<ContextData>();
 
-export function getContext(): ContextData {
-	return RequestContext.getStore() || {};
-}
-
-import { Injectable } from '@nestjs/common';
-
 @Injectable()
 export class RequestContextService {
-	private readonly context = getContext();
+	getContext() {
+		return RequestContext.getStore() || {};
+	}
 
 	getTenantId(): string | undefined {
-		return this.context.tenantId;
+		return this.getContext().tenantId;
 	}
 
 	getUserId(): string | undefined {
-		return this.context.userId;
+		return this.getContext().userId;
 	}
 
 	isSuperUser(): boolean {
-		return this.context.isSuperUser === true;
+		return this.getContext().isSuperUser === true;
 	}
 }

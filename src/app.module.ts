@@ -7,7 +7,7 @@ import { connectionSource } from './config/database.config';
 import { winstonLoggerConfig } from './config/logger.config';
 import { WinstonModule } from 'nest-winston';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './account/application/guards/auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -16,7 +16,9 @@ import { TenantModule } from './tenant/tenant.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ContextMiddleware } from './common/middlewares/context.middleware';
+import { StorageModule } from './storage/storage.module';
 import Redis from 'ioredis';
+import { RequestContextInterceptor } from './common/context/request-context.interceptor';
 
 @Module({
 	imports: [
@@ -52,6 +54,7 @@ import Redis from 'ioredis';
 		}),
 		AccountModule,
 		TenantModule,
+		StorageModule,
 	],
 	controllers: [],
 	providers: [
@@ -67,7 +70,11 @@ import Redis from 'ioredis';
 			provide: APP_GUARD,
 			useClass: AuthGuard,
 		},
-		Logger
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: RequestContextInterceptor,
+		},
+		Logger,
 	],
 })
 export class AppModule implements NestModule {

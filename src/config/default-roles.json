@@ -5,31 +5,7 @@
 			"description": "Pemilik platform yang mengelola seluruh tenant dan operasional sistem",
 			"isDefault": false,
 			"permissions": [
-				"users:create",
-				"users:read",
-				"users:update",
-				"users:delete",
-				"users:activate",
-				"users:deactivate",
-				"roles:create",
-				"roles:read",
-				"roles:update",
-				"roles:delete",
-				"roles:assign",
-				"roles:unassign",
-				"tenants:create",
-				"tenants:read",
-				"tenants:update",
-				"tenants:delete",
-				"tenants:activate",
-				"tenants:deactivate",
-				"system:manage_settings",
-				"system:view_logs",
-				"system:send_announcement",
-				"subscription:view",
-				"subscription:change_plan",
-				"dashboard:view",
-				"dashboard:view_notifications"
+				"manage:system"
 			]
 		},
 		{

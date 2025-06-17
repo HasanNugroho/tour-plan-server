@@ -50,6 +50,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
+        console.log(this.context)
 		if (!this.context.isSuperUser()) {
 			throw new ForbiddenException('Only superadmin can access all tenants');
 		}
