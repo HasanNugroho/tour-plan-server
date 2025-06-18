@@ -4,18 +4,17 @@ import {
 	BadRequestException,
 	ForbiddenException,
 	Inject,
-	ConflictException,
 } from '@nestjs/common';
 import { ITenantService } from '../../domain/interface/tenant.service.interface';
 import { ITenantRepository } from '../../domain/interface/tenant.repository.interface';
 import { Tenant } from '../../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../../domain/dto/tenant.dto';
-import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
+import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY } from 'src/common/constant';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { plainToInstance } from 'class-transformer';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import { FileStatus } from 'src/storage/domain/file';
+import { File, FileStatus } from 'src/storage/domain/file';
 import { StorageServiceInterface } from 'src/storage/domain/interface/storage.service.interface';
 
 @Injectable()
@@ -31,7 +30,7 @@ export class TenantService implements ITenantService {
 		private readonly storageService: StorageServiceInterface,
 
 		private readonly context: RequestContextService,
-	) { }
+	) {}
 
 	async getById(id: string): Promise<Tenant> {
 		const tenant = await this.handleCache(id, () => this.tenantRepository.findById(id));
@@ -40,7 +39,7 @@ export class TenantService implements ITenantService {
 		}
 
 		// Multi-tenant isolation
-		if (!this.context.isSuperUser() && tenant.id !== this.context.getUserId()) {
+		if (!this.context.isSuperUser() && tenant.id !== this.context.getTenantId()) {
 			throw new ForbiddenException(`Access to tenant ${id} is forbidden`);
 		}
 
@@ -85,7 +84,7 @@ export class TenantService implements ITenantService {
 			description: payload.description,
 			address: payload.address,
 			contactInfo: payload.contact_info,
-			logoId: payload.logoId
+			logoId: payload.logoId,
 		});
 		tenant.code = generatedCode;
 
@@ -107,16 +106,20 @@ export class TenantService implements ITenantService {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
 		}
 
-		if (!this.context.isSuperUser() && tenant.id !== this.context.getUserId()) {
+		const isSuperUser = this.context.isSuperUser();
+		const currentTenantId = this.context.getTenantId();
+
+		if (!isSuperUser && tenant.id !== currentTenantId) {
 			throw new ForbiddenException(`Access to update tenant ${id} is forbidden`);
 		}
 
+		let file: File | null = null;
 		if (payload.logoId) {
-			const file = await this.storageService.getById(payload.logoId, ONE_WEEK_S);
+			file = await this.storageService.getById(payload.logoId, ONE_WEEK_S);
 			if (!file) {
 				throw new BadRequestException('File not valid');
 			}
-			tenant.logo = file === null ? undefined : file;
+
 			await this.storageService.updateStatus(FileStatus.COMPLETED);
 		}
 
@@ -125,13 +128,17 @@ export class TenantService implements ITenantService {
 			payload.description ?? tenant.description,
 			payload.address ?? tenant.address,
 			payload.contact_info ?? tenant.contactInfo,
-			payload.logoId ?? tenant.logoId
+			payload.logoId ?? tenant.logoId,
 		);
 
 		await this.tenantRepository.update(id, tenant);
 
+		if (file) {
+			tenant.logo = file;
+		}
+
 		const key = `tenant:${tenant.id}`;
-		await this.cacheManager.del(key)
+		await this.cacheManager.del(key);
 		await this.cacheManager.set(key, tenant, ONE_WEEK_MS);
 	}
 
@@ -148,7 +155,7 @@ export class TenantService implements ITenantService {
 		await this.tenantRepository.delete(id);
 
 		const key = `tenant:${tenant.id}`;
-		await this.cacheManager.del(key)
+		await this.cacheManager.del(key);
 	}
 
 	private generateTenantCode(name: string): string {
@@ -162,7 +169,10 @@ export class TenantService implements ITenantService {
 		return `${firstWord}-${datePart}`;
 	}
 
-	private async handleCache(id: string, fetchTenant: () => Promise<Tenant | null>): Promise<Tenant | null> {
+	private async handleCache(
+		id: string,
+		fetchTenant: () => Promise<Tenant | null>,
+	): Promise<Tenant | null> {
 		const key = `tenant:${id}`;
 		const cached = await this.cacheManager.get<Tenant | null>(key);
 		if (cached) return plainToInstance(Tenant, cached);

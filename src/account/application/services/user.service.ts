@@ -9,7 +9,13 @@ import {
 import { IUserService } from '../../domain/interface/user.service.interface';
 import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { IRoleRepository } from 'src/account/domain/interface/role.repository.interface';
-import { ONE_DAY_MS, ONE_DAY_S, ROLE_REPOSITORY, STORAGE_SERVICE, USER_REPOSITORY } from 'src/common/constant';
+import {
+	ONE_DAY_MS,
+	ONE_DAY_S,
+	ROLE_REPOSITORY,
+	STORAGE_SERVICE,
+	USER_REPOSITORY,
+} from 'src/common/constant';
 import { User } from '../../domain/user';
 import { CreateUserDto, UpdateUserDto } from '../../presentation/dto/user.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
@@ -34,7 +40,7 @@ export class UserService implements IUserService {
 		private readonly storageService: StorageServiceInterface,
 
 		private readonly contextService: RequestContextService,
-	) { }
+	) {}
 
 	async getById(id: string): Promise<User> {
 		const tenantId = this.contextService.getTenantId();
@@ -69,7 +75,10 @@ export class UserService implements IUserService {
 
 		const tenantId = isSuperAdminRole ? undefined : actorTenantId;
 
-		const existingUser = await this.userRepository.findByEmailOrUsername(payload.email, payload.username);
+		const existingUser = await this.userRepository.findByEmailOrUsername(
+			payload.email,
+			payload.username,
+		);
 		if (existingUser && existingUser.tenantId === tenantId) {
 			if (existingUser.email === payload.email) {
 				throw new BadRequestException('Email is already in use in this tenant');
@@ -78,7 +87,6 @@ export class UserService implements IUserService {
 				throw new BadRequestException('Username is already in use in this tenant');
 			}
 		}
-
 
 		const user = await User.create({
 			fullName: payload.fullname,
@@ -192,7 +200,7 @@ export class UserService implements IUserService {
 		}
 
 		const key = `user:${user.id}`;
-		await this.cacheManager.del(key)
+		await this.cacheManager.del(key);
 		await this.cacheManager.set(key, user, ONE_DAY_MS);
 	}
 
@@ -207,14 +215,10 @@ export class UserService implements IUserService {
 			throw new ForbiddenException('Superuser cannot delete themselves');
 		}
 
-		if (!isSuperUser && user.tenantId !== tenantId) {
-			throw new ForbiddenException('Access denied for tenant');
-		}
-
 		await this.userRepository.delete(id);
 
 		const key = `user:${user.id}`;
-		await this.cacheManager.del(key)
+		await this.cacheManager.del(key);
 	}
 
 	async setupSuperUser(payload: Omit<CreateUserDto, 'tenantId' | 'role_id'>): Promise<void> {
@@ -239,7 +243,10 @@ export class UserService implements IUserService {
 		await this.userRepository.create(superUser);
 	}
 
-	private async handleCache(id: string, fetchUser: () => Promise<User | null>): Promise<User | null> {
+	private async handleCache(
+		id: string,
+		fetchUser: () => Promise<User | null>,
+	): Promise<User | null> {
 		const key = `user:${id}`;
 		const cached = await this.cacheManager.get<User | null>(key);
 		if (cached) return plainToInstance(User, cached);

@@ -93,7 +93,7 @@ export class TenantController {
 			await this.tenantService.update(id, payload);
 			return new HttpResponse(HttpStatus.OK, true, 'Update tenant successfully');
 		} catch (error) {
-			return error;
+			throw error;
 		}
 	}
 

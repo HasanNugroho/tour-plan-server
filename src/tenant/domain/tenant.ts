@@ -56,7 +56,7 @@ export class Tenant {
 		description?: string,
 		address?: string,
 		contact_info?: string,
-		logoId?: string
+		logoId?: string,
 	): this {
 		this.name = name;
 		this.description = description;

@@ -1,10 +1,16 @@
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { RequestContextService } from "src/common/context/request-context.service";
-import { FileRepository } from "./repository/file.repository";
-import { FILE_REPOSITORY, MINIO_STORAGE, ONE_DAY_MS, ONE_DAY_S } from "src/common/constant";
-import { File, FileStatus } from "./domain/file";
-import { StorageInterface } from "./storage/storage.interface";
-import { StorageServiceInterface } from "./domain/interface/storage.service.interface";
+import {
+	BadRequestException,
+	ForbiddenException,
+	Inject,
+	Injectable,
+	NotFoundException,
+} from '@nestjs/common';
+import { RequestContextService } from 'src/common/context/request-context.service';
+import { FileRepository } from './repository/file.repository';
+import { FILE_REPOSITORY, MINIO_STORAGE, ONE_DAY_MS, ONE_DAY_S } from 'src/common/constant';
+import { File, FileStatus } from './domain/file';
+import { StorageInterface } from './storage/storage.interface';
+import { StorageServiceInterface } from './domain/interface/storage.service.interface';
 
 @Injectable()
 export class StorageService implements StorageServiceInterface {
@@ -17,7 +23,7 @@ export class StorageService implements StorageServiceInterface {
 		@Inject(MINIO_STORAGE)
 		private readonly storage: StorageInterface,
 		private readonly contextService: RequestContextService,
-	) { }
+	) {}
 
 	async getById(id: string, expired: number = ONE_DAY_S): Promise<File | null> {
 		const tenantId = this.contextService.getTenantId();
@@ -33,7 +39,7 @@ export class StorageService implements StorageServiceInterface {
 
 		file.url = await this.storage.getFile(file.storedName, file.tenantId, expired);
 
-		this.file = file
+		this.file = file;
 		return file;
 	}
 
@@ -62,11 +68,15 @@ export class StorageService implements StorageServiceInterface {
 	}
 
 	async updateStatus(status: FileStatus): Promise<void> {
+		const tenantId = this.contextService.getTenantId();
+
 		if (status === FileStatus.COMPLETED) {
 			this.file.markAsCompleted();
 		} else {
 			this.file.markAsFailed();
 		}
+
+		this.file.tenantId = tenantId;
 
 		await this.fileRepository.update(this.file);
 	}
