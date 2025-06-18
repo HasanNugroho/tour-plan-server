@@ -25,5 +25,6 @@ import { StorageModule } from 'src/storage/storage.module';
 			useClass: TenantRepository,
 		},
 	],
+	exports: [TENANT_SERVICE]
 })
 export class TenantModule { }

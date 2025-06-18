@@ -21,6 +21,7 @@ import { AuthService } from './application/services/auth.service';
 import { AuthController } from './presentation/auth.controller';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { StorageModule } from 'src/storage/storage.module';
+import { TenantModule } from 'src/tenant/tenant.module';
 
 @Module({
 	imports: [
@@ -34,7 +35,8 @@ import { StorageModule } from 'src/storage/storage.module';
 			inject: [ConfigService],
 		}),
 		RequestContextModule,
-		StorageModule
+		StorageModule,
+		TenantModule
 	],
 	controllers: [UserController, RoleController, AuthController],
 	providers: [

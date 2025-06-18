@@ -50,32 +50,6 @@ export class UserService implements IUserService {
 		return user;
 	}
 
-	async getByEmail(email: string): Promise<User> {
-		const tenantId = this.contextService.getTenantId();
-		const isSuperUser = this.contextService.isSuperUser();
-
-		const user = await this.userRepository.getByEmail(email);
-		if (!user) throw new NotFoundException(`User with email ${email} not found`);
-		if (!isSuperUser && user.tenantId !== tenantId) {
-			throw new ForbiddenException('Access denied for tenant');
-		}
-
-		return user;
-	}
-
-	async getByUsername(username: string): Promise<User> {
-		const tenantId = this.contextService.getTenantId();
-		const isSuperUser = this.contextService.isSuperUser();
-
-		const user = await this.userRepository.getByUsername(username);
-		if (!user) throw new NotFoundException(`User with username ${username} not found`);
-		if (!isSuperUser && user.tenantId !== tenantId) {
-			throw new ForbiddenException('Access denied for tenant');
-		}
-
-		return user;
-	}
-
 	async create(payload: CreateUserDto): Promise<void> {
 		const actorTenantId = this.contextService.getTenantId();
 		const isSuperUser = this.contextService.isSuperUser();
@@ -93,24 +67,25 @@ export class UserService implements IUserService {
 			throw new UnauthorizedException('Cannot assign role from another tenant');
 		}
 
-		const tenantId = isSuperAdminRole ? null : actorTenantId;
+		const tenantId = isSuperAdminRole ? undefined : actorTenantId;
 
-		const emailInUse = await this.userRepository.getByEmail(payload.email);
-		if (emailInUse && emailInUse.tenantId === tenantId) {
-			throw new BadRequestException('Email is already in use in this tenant');
+		const existingUser = await this.userRepository.findByEmailOrUsername(payload.email, payload.username);
+		if (existingUser && existingUser.tenantId === tenantId) {
+			if (existingUser.email === payload.email) {
+				throw new BadRequestException('Email is already in use in this tenant');
+			}
+			if (existingUser.username === payload.username) {
+				throw new BadRequestException('Username is already in use in this tenant');
+			}
 		}
 
-		const usernameInUse = await this.userRepository.getByUsername(payload.username);
-		if (usernameInUse && usernameInUse.tenantId === tenantId) {
-			throw new BadRequestException('Username is already in use in this tenant');
-		}
 
 		const user = await User.create({
-			fullname: payload.fullname,
+			fullName: payload.fullname,
 			username: payload.username,
 			email: payload.email,
 			password: payload.password,
-			role_id: payload.role_id,
+			roleId: payload.role_id,
 			tenantId,
 		});
 
@@ -136,7 +111,7 @@ export class UserService implements IUserService {
 		const role = await this.roleRepository.getById(roleId);
 		if (!role) throw new BadRequestException('Role does not exist');
 
-		user.role_id = roleId;
+		user.roleId = roleId;
 		await this.userRepository.update(userId, user);
 	}
 
@@ -152,7 +127,7 @@ export class UserService implements IUserService {
 			throw new ForbiddenException('Access denied for tenant');
 		}
 
-		user.is_active = isActive;
+		user.isActive = isActive;
 		await this.userRepository.update(userId, user);
 	}
 
@@ -178,10 +153,10 @@ export class UserService implements IUserService {
 				throw new ForbiddenException('Cannot assign role from another tenant');
 			}
 
-			user.role_id = data.role_id;
+			user.roleId = data.role_id;
 		}
 
-		user.fullname = data.fullname ?? user.fullname;
+		user.fullName = data.fullname ?? user.fullName;
 
 		if (data.profilePhotoId) {
 			const file = await this.storageService.getById(data.profilePhotoId);
@@ -212,7 +187,8 @@ export class UserService implements IUserService {
 		await this.userRepository.update(id, user);
 
 		if (user.profilePhotoId) {
-			user.profilePhoto = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S)
+			const file = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S);
+			if (file) user.profilePhoto = file;
 		}
 
 		const key = `user:${user.id}`;
@@ -253,11 +229,11 @@ export class UserService implements IUserService {
 		}
 
 		const superUser = await User.create({
-			fullname: payload.fullname,
+			fullName: payload.fullname,
 			username: payload.username,
 			email: payload.email,
 			password: payload.password,
-			role_id: role.id,
+			roleId: role.id,
 		});
 
 		await this.userRepository.create(superUser);
@@ -271,7 +247,8 @@ export class UserService implements IUserService {
 		const user = await fetchUser();
 		if (user) {
 			if (user.profilePhotoId) {
-				user.profilePhoto = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S)
+				const file = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S);
+				if (file) user.profilePhoto = file;
 			}
 			await this.cacheManager.set(key, user, ONE_DAY_MS);
 		}

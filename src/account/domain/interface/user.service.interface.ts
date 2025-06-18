@@ -15,22 +15,6 @@ export interface IUserService {
 	getById(id: string): Promise<User>;
 
 	/**
-	 * Fetch a user by their email.
-	 * @param email - The email of the user to retrieve.
-	 * @returns A promise that resolves to the user object.
-	 * @throws NotFoundException if the user is not found.
-	 */
-	getByEmail(email: string): Promise<User>;
-
-	/**
-	 * Fetch a user by their username.
-	 * @param username - The username of the user to retrieve.
-	 * @returns A promise that resolves to the user object.
-	 * @throws NotFoundException if the user is not found.
-	 */
-	getByUsername(uesrname: string): Promise<User>;
-
-	/**
 	 * Create a new user.
 	 * @param userData - The data of the user to create.
 	 * @returns A promise that resolves to the newly created user object.

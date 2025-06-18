@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, Length, MinLength } from 'class-validator';
 
 export class TokenPayloadDto {
 	@ApiProperty({
@@ -39,4 +39,12 @@ export class RegisterDto {
 	@MinLength(8)
 	@IsString()
 	password: string;
+
+	@ApiProperty({
+		description: 'Tenant name',
+		example: 'Acme Corp Updated',
+	})
+	@IsString()
+	@Length(1, 100)
+	companyName: string;
 }

@@ -14,36 +14,36 @@ export class Tenant {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
 
-	@Column({ length: 100 })
+	@Column({ name: 'name', length: 100 })
 	name: string;
 
 	@Index()
-	@Column({ unique: true })
+	@Column({ name: 'code', unique: true })
 	code: string;
 
-	@Column({ type: 'text', nullable: true })
+	@Column({ name: 'description', type: 'text', nullable: true })
 	description?: string;
 
-	@Column({ type: 'text', nullable: true })
+	@Column({ name: 'address', type: 'text', nullable: true })
 	address?: string;
 
-	@Column({ type: 'text', nullable: true })
-	contact_info?: string;
+	@Column({ name: 'contact_info', type: 'text', nullable: true })
+	contactInfo?: string;
 
 	@Index()
-	@Column({ default: true })
-	is_active: boolean;
+	@Column({ name: 'is_active', default: true })
+	isActive: boolean;
 
-	@Column({ type: 'uuid', nullable: true })
+	@Column({ name: 'logo_id', type: 'uuid', nullable: true })
 	@ForeignKey('files')
 	logoId?: string;
-	logo?: File
+	logo?: File;
 
-	@CreateDateColumn({ type: 'timestamp' })
+	@CreateDateColumn({ name: 'created_at', type: 'timestamp' })
 	createdAt: Date;
 
-	@UpdateDateColumn({ type: 'timestamp' })
-	updated_at: Date;
+	@UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+	updatedAt: Date;
 
 	static create(params: Partial<Tenant>): Tenant {
 		const tenant = new Tenant();
@@ -57,21 +57,20 @@ export class Tenant {
 		address?: string,
 		contact_info?: string,
 		logoId?: string
-	) {
+	): this {
 		this.name = name;
 		this.description = description;
 		this.address = address;
-		this.contact_info = contact_info;
+		this.contactInfo = contact_info;
 		this.logoId = logoId;
+		return this;
 	}
 
 	deactivate() {
-		this.is_active = false;
-		this.updated_at = new Date();
+		this.isActive = false;
 	}
 
 	activate() {
-		this.is_active = true;
-		this.updated_at = new Date();
+		this.isActive = true;
 	}
 }

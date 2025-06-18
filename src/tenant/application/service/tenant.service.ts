@@ -4,12 +4,13 @@ import {
 	BadRequestException,
 	ForbiddenException,
 	Inject,
+	ConflictException,
 } from '@nestjs/common';
 import { ITenantService } from '../../domain/interface/tenant.service.interface';
 import { ITenantRepository } from '../../domain/interface/tenant.repository.interface';
 import { Tenant } from '../../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../../domain/dto/tenant.dto';
-import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY } from 'src/common/constant';
+import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { plainToInstance } from 'class-transformer';
@@ -68,7 +69,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async create(payload: CreateTenantDto): Promise<Tenant> {
-		if (!this.context.isSuperUser()) {
+		if (!this.context.isSuperUser() && this.context.getTenantId()) {
 			throw new ForbiddenException('Only superadmin can create tenants');
 		}
 
@@ -83,7 +84,7 @@ export class TenantService implements ITenantService {
 			name: payload.name,
 			description: payload.description,
 			address: payload.address,
-			contact_info: payload.contact_info,
+			contactInfo: payload.contact_info,
 			logoId: payload.logoId
 		});
 		tenant.code = generatedCode;
@@ -123,7 +124,7 @@ export class TenantService implements ITenantService {
 			payload.name ?? tenant.name,
 			payload.description ?? tenant.description,
 			payload.address ?? tenant.address,
-			payload.contact_info ?? tenant.contact_info,
+			payload.contact_info ?? tenant.contactInfo,
 			payload.logoId ?? tenant.logoId
 		);
 

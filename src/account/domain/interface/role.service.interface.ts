@@ -31,6 +31,13 @@ export interface IRoleService {
 	create(payload: CreateRoleDto): Promise<void>;
 
 	/**
+	 * Create a new role.
+	 * @returns role.
+	 * @throws ConflictException if the role name already exists.
+	 */
+	createDefaultRoles(tenantId?: string): Promise<Role[]>;
+
+	/**
 	 * Update an existing role's details.
 	 * @param id - The ID of the role to update.
 	 * @param payload - The new data to update the role with.

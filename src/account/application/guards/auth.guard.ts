@@ -62,7 +62,7 @@ export class AuthGuard implements CanActivate {
 			const payload = await this.jwtService.verifyAsync(token, { secret });
 
 			const user = await this.fetchUser(payload.id);
-			const role = await this.getRole(user.role_id);
+			const role = await this.getRole(user.roleId);
 			role.permissions = role.permissions ?? defaultRoles;
 
 			user.role = role;

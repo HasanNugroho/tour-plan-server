@@ -20,37 +20,45 @@ export class Role {
 	id: string;
 
 	@Index()
-	@Column({ unique: true })
+	@Column({ name: 'name' })
 	name: string;
 
-	@Column({ nullable: true })
+	@Column({ name: 'description', nullable: true })
 	description: string;
 
-	@Column('jsonb')
+	@Column('jsonb', { name: 'permissions' })
 	permissions: string[];
 
 	@Index()
-	@Column({ type: 'uuid', nullable: true })
+	@Column({ name: 'tenant_id', type: 'uuid', nullable: true })
 	@ForeignKey('tenants')
-	tenantId: string | null;
+	tenantId?: string;
 
-	@CreateDateColumn()
-	created_at: Date;
+	@Column('boolean', { name: 'is_system', default: false })
+	isSystem: boolean
 
-	@UpdateDateColumn()
-	updated_at: Date;
+	@CreateDateColumn({ name: 'created_at' })
+	createdAt: Date;
 
-	new(
+	@UpdateDateColumn({ name: 'updated_at' })
+	updatedAt: Date;
+
+	/**
+	 * Factory method to create a new Role instance.
+	 */
+	static create(
 		name: string,
 		description: string,
 		permissions: string[],
-		tenantId: string | null = null,
+		tenantId?: string,
+		isSystem: boolean = false
 	): Role {
 		const role = new Role();
 		role.name = name;
 		role.description = description;
 		role.permissions = permissions;
 		role.tenantId = tenantId;
+		role.isSystem = isSystem
 		return role;
 	}
 

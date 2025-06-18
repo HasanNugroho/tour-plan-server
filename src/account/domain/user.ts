@@ -18,74 +18,74 @@ export class User {
 	id: string;
 
 	@Index()
-	@Column('uuid', { nullable: true })
+	@Column('uuid', { name: 'tenant_id', nullable: true })
 	@ForeignKey('tenants')
-	tenantId: string | null;
+	tenantId?: string;
 
-	@Column()
-	fullname: string;
+	@Column({ name: 'fullname' })
+	fullName: string;
 
 	@Index()
-	@Column({ unique: true })
+	@Column({ name: 'username', unique: true })
 	username: string;
 
 	@Index()
-	@Column({ unique: true })
+	@Column({ name: 'email', unique: true })
 	email: string;
 
-	@Column('text')
-	password_hash: string;
+	@Column('text', { name: 'password_hash' })
+	passwordHash: string;
 
 	@Index()
-	@Column({ type: 'uuid' })
+	@Column('uuid', { name: 'role_id' })
 	@ForeignKey('roles')
-	role_id: string;
+	roleId: string;
 	role?: Role;
 
-	@Column({ type: 'uuid', nullable: true })
+	@Column('uuid', { name: 'profile_photo_id', nullable: true })
 	@ForeignKey('files')
-	profilePhotoId: string | null;
-	profilePhoto?: File | null | undefined
+	profilePhotoId?: string;
+	profilePhoto?: File;
 
-	@Column({ type: 'boolean', default: true })
-	is_active: boolean;
+	@Column({ name: 'is_active', type: 'boolean', default: true })
+	isActive: boolean;
 
-	@CreateDateColumn()
-	created_at: Date;
+	@CreateDateColumn({ name: 'created_at' })
+	createdAt: Date;
 
-	@UpdateDateColumn()
-	updated_at: Date;
+	@UpdateDateColumn({ name: 'updated_at' })
+	updatedAt: Date;
 
 	static async create(params: {
-		fullname: string;
+		fullName: string;
 		username: string;
 		email: string;
 		password: string;
-		role_id: string;
-		tenantId?: string | null;
+		roleId: string;
+		tenantId?: string;
 	}): Promise<User> {
 		const user = new User();
-		user.fullname = params.fullname;
+		user.fullName = params.fullName;
 		user.username = params.username;
 		user.email = params.email;
-		user.password_hash = await user.setPassword(params.password);
-		user.role_id = params.role_id;
-		user.tenantId = params.tenantId ?? null;
-		user.is_active = true;
+		user.passwordHash = await user.setPassword(params.password);
+		user.roleId = params.roleId;
+		user.tenantId = params.tenantId;
+		user.isActive = true;
 		return user;
 	}
 
 	async setPassword(plain: string): Promise<string> {
-		this.password_hash = await bcrypt.hash(plain, 10);
-		return this.password_hash;
+		this.passwordHash = await bcrypt.hash(plain, 10);
+		return this.passwordHash;
 	}
 
 	async validatePasswordHash(password: string): Promise<boolean> {
-		return await bcrypt.compare(password, this.password_hash);
+		return await bcrypt.compare(password, this.passwordHash);
 	}
 
 	toResponse() {
-		const { password_hash, ...userData } = this;
+		const { passwordHash, ...userData } = this;
 		return userData;
 	}
 }

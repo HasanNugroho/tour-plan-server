@@ -12,6 +12,15 @@ export interface IRoleRepository {
 	create(role: Role): Promise<Role>;
 
 	/**
+	 * Creates a new role in the system.
+	 *
+	 * @param role - The role object to create.
+	 *
+	 * @returns A promise that resolves when the role is created successfully.
+	 */
+	createMany(role: Role[]): Promise<Role[]>;
+
+	/**
 	 * gets a role by its ID.
 	 *
 	 * @param id - The ID of the role to get.

@@ -16,7 +16,8 @@ async function bootstrap() {
 				name: roleData.name,
 				description: roleData.description,
 				permissions: roleData.permissions,
-				tenantId: null,
+				tenantId: undefined,
+				isSystem: true
 			});
 			await roleRepository.save(role);
 			console.log(`Seeded role: ${roleData.name}`);

@@ -23,6 +23,14 @@ export interface IUserRepository {
 	getByUsername(username: string): Promise<User | null>;
 
 	/**
+	 * @param email - The email of the user to get
+	 * @param username - The username of the user to get
+	 *
+	 * @returns The user with the given email or username, or null if not found
+	 */
+	findByEmailOrUsername(email: string, username: string): Promise<User | null>;
+
+	/**
 	 * @param roleId - The roleId of the users to fetch
 	 *
 	 * @returns The user with the given roleId, or null if not found

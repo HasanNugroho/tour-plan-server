@@ -10,7 +10,7 @@ export class RoleRepository implements IRoleRepository {
 	constructor(
 		@InjectRepository(Role)
 		private readonly db: Repository<Role>,
-	) {}
+	) { }
 
 	async create(role: Role): Promise<Role> {
 		try {
@@ -18,6 +18,10 @@ export class RoleRepository implements IRoleRepository {
 		} catch (error) {
 			throw new InternalServerErrorException('Database error on role creation');
 		}
+	}
+
+	async createMany(role: Role[]): Promise<Role[]> {
+		return await this.db.save(role);
 	}
 
 	async getById(id: string): Promise<Role | null> {
