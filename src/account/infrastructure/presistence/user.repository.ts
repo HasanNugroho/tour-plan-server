@@ -1,70 +1,75 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { IsNull, Repository } from "typeorm";
-import { User } from "src/account/domain/user";
-import { IUserRepository } from "src/account/domain/repository/user.repository.interface";
+import {
+	ConflictException,
+	Injectable,
+	InternalServerErrorException,
+	NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { IsNull, Repository } from 'typeorm';
+import { User } from 'src/account/domain/user';
+import { IUserRepository } from 'src/account/domain/interface/user.repository.interface';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
-    constructor(
-        @InjectRepository(User)
-        private readonly db: Repository<User>,
-    ) { }
+	constructor(
+		@InjectRepository(User)
+		private readonly db: Repository<User>,
+	) {}
 
-    async create(user: User): Promise<User> {
-        try {
-            return this.db.save(user);
-        } catch (error) {
-            if (error.code === '23505') {
-                throw new ConflictException('Role already exists');
-            }
-            throw new InternalServerErrorException(error);
-        }
-    }
+	async create(user: User): Promise<User> {
+		try {
+			return this.db.save(user);
+		} catch (error) {
+			if (error.code === '23505') {
+				throw new ConflictException('Role already exists');
+			}
+			throw new InternalServerErrorException(error);
+		}
+	}
 
-    async getById(id: string): Promise<User | null> {
-        return this.db.findOne({ where: { id } });
-    }
+	async getById(id: string): Promise<User | null> {
+		return this.db.findOne({ where: { id } });
+	}
 
-    async getByEmail(email: string): Promise<User | null> {
-        return this.db.findOne({ where: { email } });
-    }
+	async getByEmail(email: string): Promise<User | null> {
+		return this.db.findOne({ where: { email } });
+	}
 
-    async getByUsername(username: string): Promise<User | null> {
-        return this.db.findOne({ where: { username } });
-    }
-    
-    async getAllByRoleId(roleId: string): Promise<User[]> {
-        return this.db.find({ where: { role_id: roleId } });
-    }
+	async getByUsername(username: string): Promise<User | null> {
+		return this.db.findOne({ where: { username } });
+	}
 
-    async update(id: string, userData: Partial<User>): Promise<User> {
-        const existingUser = await this.db.findOne({ where: { id } });
+	async getAllByRoleId(roleId: string): Promise<User[]> {
+		return this.db.find({ where: { role_id: roleId } });
+	}
 
-        if (!existingUser) {
-            throw new NotFoundException('User not found');
-        }
+	async update(id: string, userData: Partial<User>): Promise<User> {
+		const existingUser = await this.db.findOne({ where: { id } });
 
-        Object.assign(existingUser, userData);
+		if (!existingUser) {
+			throw new NotFoundException('User not found');
+		}
 
-        try {
-            return this.db.save(existingUser);
-        } catch (error) {
-            throw new InternalServerErrorException(error);
-        }
-    }
+		Object.assign(existingUser, userData);
 
-    async delete(id: string): Promise<void> {
-        try {
-            await this.db.delete(id);
-        } catch (error) {
-            throw new InternalServerErrorException(error);
-        }
-    }
+		try {
+			return this.db.save(existingUser);
+		} catch (error) {
+			throw new InternalServerErrorException(error);
+		}
+	}
 
-    getSuperUser(): Promise<User | null> {
-        return this.db.findOne({
-            where: { tenantId: IsNull() },
-        });
-    }
+	async delete(id: string): Promise<void> {
+		try {
+			await this.db.delete(id);
+		} catch (error) {
+			throw new InternalServerErrorException(error);
+		}
+	}
+
+	getSuperUser(): Promise<User | null> {
+		return this.db.findOne({
+			where: { tenantId: IsNull() },
+		});
+	}
 }

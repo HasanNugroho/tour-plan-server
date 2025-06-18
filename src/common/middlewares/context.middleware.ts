@@ -4,15 +4,15 @@ import { RequestContext } from '../context/request-context.service';
 
 @Injectable()
 export class ContextMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction): void {
-    const user = req['user'];
+	use(req: Request, res: Response, next: NextFunction): void {
+		const user = req['user'];
 
-    const context = {
-      tenantId: user?.tenantId ?? null,
-      userId: user?.id ?? null,
-      isSuperUser: (user?.role?.name || '').toLowerCase() === 'superadmin',
-    };
+		const context = {
+			tenantId: user?.tenantId ?? null,
+			userId: user?.id ?? null,
+			isSuperUser: (user?.role?.name || '').toLowerCase() === 'superadmin',
+		};
 
-    RequestContext.run(context, () => next());
-  }
+		RequestContext.run(context, () => next());
+	}
 }
