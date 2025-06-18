@@ -5,7 +5,7 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	Index,
-    ForeignKey,
+	ForeignKey,
 } from 'typeorm';
 
 export enum FileStatus {
@@ -34,7 +34,7 @@ export type AppMimeType =
 
 @Entity('files')
 @Index(['uploadStatus', 'createdAt'])
-@Index(['tenantId', 'uploadedBy']) 
+@Index(['tenantId', 'uploadedBy'])
 export class File {
 	@PrimaryGeneratedColumn('uuid')
 	id: string;
@@ -64,7 +64,7 @@ export class File {
 
 	@Index()
 	@Column({ type: 'uuid', nullable: true })
-    @ForeignKey('tenants')
+	@ForeignKey('tenants')
 	tenantId?: string;
 
 	@Column({
@@ -76,7 +76,7 @@ export class File {
 	uploadStatus: FileStatus;
 
 	@Column({ name: 'uploaded_by', type: 'uuid' })
-    @ForeignKey('users')
+	@ForeignKey('users')
 	uploadedBy: string;
 
 	@CreateDateColumn({ name: 'created_at' })
@@ -84,6 +84,9 @@ export class File {
 
 	@UpdateDateColumn({ name: 'updated_at' })
 	updatedAt: Date;
+
+	// url from cloud storage
+	url?: string;
 
 	static create(params: Partial<File>): File {
 		const file = new File();

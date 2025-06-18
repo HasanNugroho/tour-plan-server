@@ -17,7 +17,7 @@ import { IRoleRepository } from 'src/account/domain/interface/role.repository.in
 import { IUserRepository } from 'src/account/domain/interface/user.repository.interface';
 import { Role } from 'src/account/domain/role';
 import { User } from 'src/account/domain/user';
-import { IS_PUBLIC_KEY, ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
+import { IS_PUBLIC_KEY, ONE_HOUR_MS, ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import * as rolesJson from 'src/config/permissions.json';
 
 var _ = require('lodash');
@@ -39,7 +39,7 @@ export class AuthGuard implements CanActivate {
 		private jwtService: JwtService,
 		private reflector: Reflector,
 		private configService: ConfigService,
-	) {}
+	) { }
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		const { isPublic, roles = [] } = this.validatePublicRoles(context);
@@ -119,7 +119,7 @@ export class AuthGuard implements CanActivate {
 		const user = await this.userRepository.getById(userId);
 		if (!user) throw new UnauthorizedException('User not found');
 
-		await this.cacheManager.set(key, user, 3600000);
+		await this.cacheManager.set(key, user, ONE_HOUR_MS);
 		return user;
 	}
 
@@ -132,7 +132,7 @@ export class AuthGuard implements CanActivate {
 		const role = await this.roleRepository.getById(roleId);
 		if (!role) throw new UnauthorizedException('role not found');
 
-		await this.cacheManager.set(key, role, 3600000);
+		await this.cacheManager.set(key, role, ONE_HOUR_MS);
 		return role;
 	}
 }

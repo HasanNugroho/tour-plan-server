@@ -6,12 +6,14 @@ import { Tenant } from './domain/tenant';
 import { TENANT_REPOSITORY, TENANT_SERVICE } from 'src/common/constant';
 import { TenantRepository } from './infrastructure/presistence/tenant.repository';
 import { RequestContextModule } from 'src/common/context/request-context.module';
+import { StorageModule } from 'src/storage/storage.module';
 
 @Module({
 	imports: [
-        TypeOrmModule.forFeature([Tenant]),
-        RequestContextModule
-    ],
+		TypeOrmModule.forFeature([Tenant]),
+		RequestContextModule,
+		StorageModule
+	],
 	controllers: [TenantController],
 	providers: [
 		{
@@ -24,4 +26,4 @@ import { RequestContextModule } from 'src/common/context/request-context.module'
 		},
 	],
 })
-export class TenantModule {}
+export class TenantModule { }

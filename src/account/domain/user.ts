@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role } from './role';
+import { File } from 'src/storage/domain/file';
 
 @Entity('users')
 export class User {
@@ -41,6 +42,11 @@ export class User {
 	role_id: string;
 	role?: Role;
 
+	@Column({ type: 'uuid', nullable: true })
+	@ForeignKey('files')
+	profilePhotoId: string | null;
+	profilePhoto?: File | null | undefined
+
 	@Column({ type: 'boolean', default: true })
 	is_active: boolean;
 
@@ -50,21 +56,23 @@ export class User {
 	@UpdateDateColumn()
 	updated_at: Date;
 
-	async new(
-		fullname: string,
-		username: string,
-		email: string,
-		password: string,
-		role_id: string,
-		tenantId: string | null = null,
-	): Promise<User> {
-		this.fullname = fullname;
-		this.username = username;
-		this.email = email;
-		this.password_hash = await this.setPassword(password);
-		this.role_id = role_id;
-		(this.tenantId = tenantId), (this.is_active = true);
-		return this;
+	static async create(params: {
+		fullname: string;
+		username: string;
+		email: string;
+		password: string;
+		role_id: string;
+		tenantId?: string | null;
+	}): Promise<User> {
+		const user = new User();
+		user.fullname = params.fullname;
+		user.username = params.username;
+		user.email = params.email;
+		user.password_hash = await user.setPassword(params.password);
+		user.role_id = params.role_id;
+		user.tenantId = params.tenantId ?? null;
+		user.is_active = true;
+		return user;
 	}
 
 	async setPassword(plain: string): Promise<string> {
@@ -72,8 +80,8 @@ export class User {
 		return this.password_hash;
 	}
 
-	validatePasswordHash(password: string): boolean {
-		return bcrypt.compare(password, this.password_hash);
+	async validatePasswordHash(password: string): Promise<boolean> {
+		return await bcrypt.compare(password, this.password_hash);
 	}
 
 	toResponse() {

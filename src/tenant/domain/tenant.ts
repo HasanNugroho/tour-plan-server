@@ -1,3 +1,4 @@
+import { File } from 'src/storage/domain/file';
 import {
 	Entity,
 	Column,
@@ -5,6 +6,7 @@ import {
 	CreateDateColumn,
 	UpdateDateColumn,
 	Index,
+	ForeignKey,
 } from 'typeorm';
 
 @Entity('tenants')
@@ -32,27 +34,35 @@ export class Tenant {
 	@Column({ default: true })
 	is_active: boolean;
 
+	@Column({ type: 'uuid', nullable: true })
+	@ForeignKey('files')
+	logoId?: string;
+	logo?: File
+
 	@CreateDateColumn({ type: 'timestamp' })
 	createdAt: Date;
 
 	@UpdateDateColumn({ type: 'timestamp' })
 	updated_at: Date;
 
-	new(name: string, description?: string, address?: string, contact_info?: string): Tenant {
-		this.name = name;
-		this.description = description;
-		this.address = address;
-		this.contact_info = contact_info;
-		this.is_active = true;
-		return this;
+	static create(params: Partial<Tenant>): Tenant {
+		const tenant = new Tenant();
+		Object.assign(tenant, params);
+		return tenant;
 	}
 
-	updateInfo(name: string, description?: string, address?: string, contact_info?: string) {
+	updateInfo(
+		name: string,
+		description?: string,
+		address?: string,
+		contact_info?: string,
+		logoId?: string
+	) {
 		this.name = name;
 		this.description = description;
 		this.address = address;
 		this.contact_info = contact_info;
-		this.updated_at = new Date();
+		this.logoId = logoId;
 	}
 
 	deactivate() {

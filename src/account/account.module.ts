@@ -20,6 +20,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './application/services/auth.service';
 import { AuthController } from './presentation/auth.controller';
 import { RequestContextModule } from 'src/common/context/request-context.module';
+import { StorageModule } from 'src/storage/storage.module';
 
 @Module({
 	imports: [
@@ -32,7 +33,8 @@ import { RequestContextModule } from 'src/common/context/request-context.module'
 			}),
 			inject: [ConfigService],
 		}),
-        RequestContextModule
+		RequestContextModule,
+		StorageModule
 	],
 	controllers: [UserController, RoleController, AuthController],
 	providers: [
@@ -59,4 +61,4 @@ import { RequestContextModule } from 'src/common/context/request-context.module'
 	],
 	exports: [USER_REPOSITORY, ROLE_REPOSITORY],
 })
-export class AccountModule {}
+export class AccountModule { }

@@ -35,4 +35,6 @@ export interface IAuthService {
 	 * @returns Void
 	 */
 	// resetPassword(token: string, newPassword: string): Promise<void>;
+
+	register
 }

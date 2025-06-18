@@ -37,8 +37,6 @@ import { RequestContextInterceptor } from './common/context/request-context.inte
 			useFactory: (config: ConfigService) => {
 				const ttl = config.get<number>('throttle.ttl') ?? 60;
 				const limit = config.get<number>('throttle.limit') ?? 10;
-				console.log('Throttle TTL:', ttl);
-				console.log('Throttle Limit:', limit);
 
 				const redis = new Redis({
 					host: config.get('redis.host'),
