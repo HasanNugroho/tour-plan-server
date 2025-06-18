@@ -1,4 +1,11 @@
-import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	Inject,
+	Injectable,
+	InternalServerErrorException,
+	UnauthorizedException,
+} from '@nestjs/common';
 import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { ROLE_SERVICE, TENANT_SERVICE, USER_REPOSITORY } from 'src/common/constant';
 import { IAuthService } from '../../domain/interface/auth.service.interface';
@@ -30,7 +37,7 @@ export class AuthService implements IAuthService {
 
 		private readonly jwtService: JwtService,
 		private readonly configService: ConfigService,
-	) { }
+	) {}
 
 	async login(credential: Credential): Promise<CredentialResponse> {
 		const credentialInstance = plainToInstance(Credential, credential);
@@ -55,7 +62,7 @@ export class AuthService implements IAuthService {
 	async register(payload: RegisterDto): Promise<void> {
 		const { fullname, username, email, password, companyName } = payload;
 
-		const exists = await this.userRepository.findByEmailOrUsername(email, username);
+		const exists = await this.userRepository.getByEmailOrUsername(email, username);
 		if (exists) {
 			throw new ConflictException('Email or username already used');
 		}
@@ -65,7 +72,7 @@ export class AuthService implements IAuthService {
 		});
 
 		const roles = await this.roleService.createDefaultRoles(tenant.id);
-		const role = roles.find(i => i.name.toLocaleLowerCase() === 'admin_tenant')
+		const role = roles.find((i) => i.name.toLocaleLowerCase() === 'admin_tenant');
 		if (!role) {
 			throw new InternalServerErrorException('admin role not found');
 		}

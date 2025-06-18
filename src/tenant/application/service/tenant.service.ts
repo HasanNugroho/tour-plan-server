@@ -33,7 +33,7 @@ export class TenantService implements ITenantService {
 	) {}
 
 	async getById(id: string): Promise<Tenant> {
-		const tenant = await this.handleCache(id, () => this.tenantRepository.findById(id));
+		const tenant = await this.handleCache(id, () => this.tenantRepository.getById(id));
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
 		}
@@ -47,7 +47,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async getByCode(code: string): Promise<Tenant> {
-		const tenant = await this.tenantRepository.findByCode(code);
+		const tenant = await this.tenantRepository.getByCode(code);
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with code "${code}" not found`);
 		}
@@ -64,7 +64,7 @@ export class TenantService implements ITenantService {
 			throw new ForbiddenException('Only superadmin can access all tenants');
 		}
 
-		return this.tenantRepository.findAll(pagination);
+		return this.tenantRepository.getAll(pagination);
 	}
 
 	async create(payload: CreateTenantDto): Promise<Tenant> {
@@ -74,7 +74,7 @@ export class TenantService implements ITenantService {
 
 		const generatedCode = this.generateTenantCode(payload.name);
 
-		const existing = await this.tenantRepository.findByCode(generatedCode);
+		const existing = await this.tenantRepository.getByCode(generatedCode);
 		if (existing) {
 			throw new BadRequestException(`Tenant code "${generatedCode}" already exists`);
 		}
@@ -101,7 +101,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async update(id: string, payload: UpdateTenantDto): Promise<void> {
-		const tenant = await this.tenantRepository.findById(id);
+		const tenant = await this.tenantRepository.getById(id);
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
 		}
@@ -143,7 +143,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async delete(id: string): Promise<void> {
-		const tenant = await this.tenantRepository.findById(id);
+		const tenant = await this.tenantRepository.getById(id);
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
 		}

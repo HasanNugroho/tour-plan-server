@@ -10,25 +10,25 @@ export class TenantRepository implements ITenantRepository {
 	constructor(
 		@InjectRepository(Tenant)
 		private readonly repo: Repository<Tenant>,
-	) { }
+	) {}
 
-	async findById(id: string): Promise<Tenant | null> {
-		return this.repo.findOne({ where: { id } });
+	async getById(id: string): Promise<Tenant | null> {
+		return this.repo.findOneBy({ id });
 	}
 
-	async findByCode(code: string): Promise<Tenant | null> {
-		return this.repo.findOne({ where: { code } });
+	async getByCode(code: string): Promise<Tenant | null> {
+		return this.repo.findOneBy({ code });
 	}
 
-	async findAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
+	async getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
 		const { keyword, order = 'ASC', orderby = 'updated_at', limit = 10 } = pagination;
 
 		const where = keyword
 			? [
-				{ name: ILike(`%${keyword}%`) },
-				{ code: ILike(`%${keyword}%`) },
-				{ description: ILike(`%${keyword}%`) },
-			]
+					{ name: ILike(`%${keyword}%`) },
+					{ code: ILike(`%${keyword}%`) },
+					{ description: ILike(`%${keyword}%`) },
+				]
 			: {};
 
 		const [data, total] = await this.repo.findAndCount({

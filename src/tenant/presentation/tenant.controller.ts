@@ -108,7 +108,7 @@ export class TenantController {
 			await this.tenantService.delete(id);
 			return new HttpResponse(HttpStatus.OK, true, 'Delete tenant successfully');
 		} catch (error) {
-			return error;
+			throw error;
 		}
 	}
 }

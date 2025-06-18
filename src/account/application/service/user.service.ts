@@ -75,7 +75,7 @@ export class UserService implements IUserService {
 
 		const tenantId = isSuperAdminRole ? undefined : actorTenantId;
 
-		const existingUser = await this.userRepository.findByEmailOrUsername(
+		const existingUser = await this.userRepository.getByEmailOrUsername(
 			payload.email,
 			payload.username,
 		);
