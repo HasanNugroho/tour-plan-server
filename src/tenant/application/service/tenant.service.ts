@@ -4,14 +4,19 @@ import {
 	BadRequestException,
 	ForbiddenException,
 	Inject,
+	ConflictException,
 } from '@nestjs/common';
 import { ITenantService } from '../../domain/interface/tenant.service.interface';
 import { ITenantRepository } from '../../domain/interface/tenant.repository.interface';
 import { Tenant } from '../../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../../domain/dto/tenant.dto';
-import { TENANT_REPOSITORY } from 'src/common/constant';
+import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
+import { plainToInstance } from 'class-transformer';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { FileStatus } from 'src/storage/domain/file';
+import { StorageServiceInterface } from 'src/storage/domain/interface/storage.service.interface';
 
 @Injectable()
 export class TenantService implements ITenantService {
@@ -19,11 +24,17 @@ export class TenantService implements ITenantService {
 		@Inject(TENANT_REPOSITORY)
 		private readonly tenantRepository: ITenantRepository,
 
+		@Inject(CACHE_MANAGER)
+		private cacheManager: Cache,
+
+		@Inject(STORAGE_SERVICE)
+		private readonly storageService: StorageServiceInterface,
+
 		private readonly context: RequestContextService,
-	) {}
+	) { }
 
 	async getById(id: string): Promise<Tenant> {
-		const tenant = await this.tenantRepository.findById(id);
+		const tenant = await this.handleCache(id, () => this.tenantRepository.findById(id));
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
 		}
@@ -50,7 +61,6 @@ export class TenantService implements ITenantService {
 	}
 
 	async getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
-        console.log(this.context)
 		if (!this.context.isSuperUser()) {
 			throw new ForbiddenException('Only superadmin can access all tenants');
 		}
@@ -59,7 +69,7 @@ export class TenantService implements ITenantService {
 	}
 
 	async create(payload: CreateTenantDto): Promise<Tenant> {
-		if (!this.context.isSuperUser()) {
+		if (!this.context.isSuperUser() && this.context.getTenantId()) {
 			throw new ForbiddenException('Only superadmin can create tenants');
 		}
 
@@ -70,18 +80,28 @@ export class TenantService implements ITenantService {
 			throw new BadRequestException(`Tenant code "${generatedCode}" already exists`);
 		}
 
-		const tenant = new Tenant().new(
-			payload.name,
-			payload.description,
-			payload.address,
-			payload.contact_info,
-		);
+		const tenant = await Tenant.create({
+			name: payload.name,
+			description: payload.description,
+			address: payload.address,
+			contactInfo: payload.contact_info,
+			logoId: payload.logoId
+		});
 		tenant.code = generatedCode;
+
+		if (payload.logoId) {
+			const file = await this.storageService.getById(payload.logoId, ONE_WEEK_S);
+			if (!file) {
+				throw new BadRequestException('File not valid');
+			}
+			tenant.logo = file === null ? undefined : file;
+			await this.storageService.updateStatus(FileStatus.COMPLETED);
+		}
 
 		return this.tenantRepository.create(tenant);
 	}
 
-	async update(id: string, payload: UpdateTenantDto): Promise<Tenant> {
+	async update(id: string, payload: UpdateTenantDto): Promise<void> {
 		const tenant = await this.tenantRepository.findById(id);
 		if (!tenant) {
 			throw new NotFoundException(`Tenant with ID ${id} not found`);
@@ -91,14 +111,28 @@ export class TenantService implements ITenantService {
 			throw new ForbiddenException(`Access to update tenant ${id} is forbidden`);
 		}
 
+		if (payload.logoId) {
+			const file = await this.storageService.getById(payload.logoId, ONE_WEEK_S);
+			if (!file) {
+				throw new BadRequestException('File not valid');
+			}
+			tenant.logo = file === null ? undefined : file;
+			await this.storageService.updateStatus(FileStatus.COMPLETED);
+		}
+
 		tenant.updateInfo(
 			payload.name ?? tenant.name,
 			payload.description ?? tenant.description,
 			payload.address ?? tenant.address,
-			payload.contact_info ?? tenant.contact_info,
+			payload.contact_info ?? tenant.contactInfo,
+			payload.logoId ?? tenant.logoId
 		);
 
-		return this.tenantRepository.update(id, tenant);
+		await this.tenantRepository.update(id, tenant);
+
+		const key = `tenant:${tenant.id}`;
+		await this.cacheManager.del(key)
+		await this.cacheManager.set(key, tenant, ONE_WEEK_MS);
 	}
 
 	async delete(id: string): Promise<void> {
@@ -112,6 +146,9 @@ export class TenantService implements ITenantService {
 		}
 
 		await this.tenantRepository.delete(id);
+
+		const key = `tenant:${tenant.id}`;
+		await this.cacheManager.del(key)
 	}
 
 	private generateTenantCode(name: string): string {
@@ -123,5 +160,21 @@ export class TenantService implements ITenantService {
 		const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
 		return `${firstWord}-${datePart}`;
+	}
+
+	private async handleCache(id: string, fetchTenant: () => Promise<Tenant | null>): Promise<Tenant | null> {
+		const key = `tenant:${id}`;
+		const cached = await this.cacheManager.get<Tenant | null>(key);
+		if (cached) return plainToInstance(Tenant, cached);
+
+		const tenant = await fetchTenant();
+		if (tenant) {
+			if (tenant.logoId) {
+				const logoFile = await this.storageService.getById(tenant.logoId, ONE_WEEK_S);
+				tenant.logo = logoFile === null ? undefined : logoFile;
+			}
+			await this.cacheManager.set(key, tenant, ONE_WEEK_MS);
+		}
+		return tenant;
 	}
 }

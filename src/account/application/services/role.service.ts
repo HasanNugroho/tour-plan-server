@@ -13,6 +13,7 @@ import { Role } from '../../domain/role';
 import { CreateRoleDto, UpdateRoleDto } from '../../presentation/dto/role.dto';
 import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
+import * as rolesData from 'src/config/default-roles.json';
 
 @Injectable()
 export class RoleService implements IRoleService {
@@ -24,7 +25,7 @@ export class RoleService implements IRoleService {
 		private readonly userRepository: IUserRepository,
 
 		private readonly contextService: RequestContextService,
-	) {}
+	) { }
 
 	async getById(id: string): Promise<Role> {
 		const tenantId = this.contextService.getTenantId();
@@ -66,13 +67,34 @@ export class RoleService implements IRoleService {
 			throw new BadRequestException('Role name already exists in this tenant');
 		}
 
-		const role = new Role().new(payload.name, payload.description, payload.permissions, tenantId);
+		const role = Role.create(
+			payload.name,
+			payload.description,
+			payload.permissions,
+			tenantId
+		);
 
 		if (!role.validatePermissions()) {
 			throw new BadRequestException('Invalid permissions provided.');
 		}
 
 		await this.roleRepository.create(role);
+	}
+
+	async createDefaultRoles(tenantId?: string): Promise<Role[]> {
+		const roles: Role[] = rolesData.roles
+			.filter((roleData: any) => roleData.name !== 'superadmin')
+			.map((roleData: any) =>
+				Role.create(
+					roleData.name,
+					roleData.description,
+					roleData.permissions,
+					tenantId,
+					true
+				),
+			);
+
+		return await this.roleRepository.createMany(roles);
 	}
 
 	async update(id: string, payload: UpdateRoleDto): Promise<void> {
@@ -114,7 +136,7 @@ export class RoleService implements IRoleService {
 			throw new NotFoundException(`Role with ID ${id} not found`);
 		}
 
-		if (!isSuperUser && role.tenantId !== tenantId) {
+		if (!isSuperUser && (role.tenantId !== tenantId || role.isSystem)) {
 			throw new ForbiddenException('Access denied to delete this role');
 		}
 

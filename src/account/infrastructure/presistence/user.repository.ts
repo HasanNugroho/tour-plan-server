@@ -14,7 +14,7 @@ export class UserRepository implements IUserRepository {
 	constructor(
 		@InjectRepository(User)
 		private readonly db: Repository<User>,
-	) {}
+	) { }
 
 	async create(user: User): Promise<User> {
 		try {
@@ -39,8 +39,17 @@ export class UserRepository implements IUserRepository {
 		return this.db.findOne({ where: { username } });
 	}
 
+	async findByEmailOrUsername(email: string, username: string): Promise<User | null> {
+		return this.db.findOne({
+			where: [
+				{ email },
+				{ username },
+			],
+		})
+	}
+
 	async getAllByRoleId(roleId: string): Promise<User[]> {
-		return this.db.find({ where: { role_id: roleId } });
+		return this.db.find({ where: { roleId } });
 	}
 
 	async update(id: string, userData: Partial<User>): Promise<User> {

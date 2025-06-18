@@ -1,3 +1,4 @@
+import { RegisterDto } from 'src/account/presentation/dto/auth.dto';
 import { Credential, CredentialResponse } from '../credential';
 
 /**
@@ -27,12 +28,5 @@ export interface IAuthService {
 	 */
 	refreshToken(refreshToken: string): Promise<CredentialResponse>;
 
-	/**
-	 * @Deprecated
-	 * Reset user password using reset token.
-	 * @param token - Password reset token
-	 * @param newPassword - New password to set
-	 * @returns Void
-	 */
-	// resetPassword(token: string, newPassword: string): Promise<void>;
+	register(data: RegisterDto): Promise<void>
 }

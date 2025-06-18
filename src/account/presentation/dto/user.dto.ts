@@ -35,7 +35,7 @@ export class CreateUserDto {
 		description: 'password',
 		example: 'admin123',
 	})
-	@MinLength(6)
+	@MinLength(8)
 	@IsString()
 	password: string;
 
@@ -72,13 +72,20 @@ export class UpdateUserDto {
 	role_id?: string;
 
 	@ApiProperty({
+		description: 'file id of profile photo',
+	})
+	@IsUUID('4')
+	@IsOptional()
+	profilePhotoId?: string;
+
+	@ApiProperty({
 		description: 'password',
 		example: 'admin123',
 	})
-	@MinLength(6)
+	@MinLength(8)
 	@IsString()
 	@IsOptional()
 	password?: string;
 }
 
-export class SetupSuperUserDto extends OmitType(CreateUserDto, ['tenantId', 'role_id'] as const) {}
+export class SetupSuperUserDto extends OmitType(CreateUserDto, ['tenantId', 'role_id'] as const) { }

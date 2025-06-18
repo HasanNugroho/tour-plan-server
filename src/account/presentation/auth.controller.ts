@@ -14,7 +14,7 @@ import { Credential } from '../domain/credential';
 import { CurrentUser } from 'src/common/decorators/user.decorator';
 import { User } from '../domain/user';
 import { Public } from 'src/common/decorators/public.decorator';
-import { TokenPayloadDto } from './dto/auth.dto';
+import { RegisterDto, TokenPayloadDto } from './dto/auth.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
 @ApiTags('Auth')
@@ -23,7 +23,7 @@ export class AuthController {
 	constructor(
 		@Inject(AUTH_SERVICE)
 		private readonly authService: IAuthService,
-	) {}
+	) { }
 
 	@ApiOperation({ summary: 'Login' })
 	@ApiBadRequestResponse({ description: 'Bad request' })
@@ -33,6 +33,16 @@ export class AuthController {
 	async create(@Body() payload: Credential) {
 		const result = await this.authService.login(payload);
 		return new HttpResponse(HttpStatus.OK, true, 'User logged in successfully', result);
+	}
+
+	@ApiOperation({ summary: 'Register' })
+	@ApiBadRequestResponse({ description: 'Bad request' })
+	@ApiUnauthorizedResponse({ description: 'Invalid identifier or password' })
+	@Public()
+	@Post('register')
+	async register(@Body() payload: RegisterDto) {
+		await this.authService.register(payload);
+		return new HttpResponse(HttpStatus.CREATED, true, 'User registered successfully', null);
 	}
 
 	@ApiBearerAuth()

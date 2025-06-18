@@ -37,7 +37,7 @@ export interface ITenantService {
 	 * @param payload - The data to update the tenant with.
 	 * @returns A promise that resolves to the updated tenant.
 	 */
-	update(id: string, payload: UpdateTenantDto): Promise<Tenant>;
+	update(id: string, payload: UpdateTenantDto): Promise<void>;
 
 	/**
 	 * Deletes a tenant by its unique identifier.

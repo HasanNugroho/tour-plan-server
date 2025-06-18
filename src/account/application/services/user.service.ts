@@ -9,10 +9,14 @@ import {
 import { IUserService } from '../../domain/interface/user.service.interface';
 import { IUserRepository } from '../../domain/interface/user.repository.interface';
 import { IRoleRepository } from 'src/account/domain/interface/role.repository.interface';
-import { ROLE_REPOSITORY, USER_REPOSITORY } from 'src/common/constant';
+import { ONE_DAY_MS, ONE_DAY_S, ROLE_REPOSITORY, STORAGE_SERVICE, USER_REPOSITORY } from 'src/common/constant';
 import { User } from '../../domain/user';
 import { CreateUserDto, UpdateUserDto } from '../../presentation/dto/user.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { plainToInstance } from 'class-transformer';
+import { StorageServiceInterface } from 'src/storage/domain/interface/storage.service.interface';
+import { FileStatus } from 'src/storage/domain/file';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -23,41 +27,22 @@ export class UserService implements IUserService {
 		@Inject(ROLE_REPOSITORY)
 		private readonly roleRepository: IRoleRepository,
 
+		@Inject(CACHE_MANAGER)
+		private cacheManager: Cache,
+
+		@Inject(STORAGE_SERVICE)
+		private readonly storageService: StorageServiceInterface,
+
 		private readonly contextService: RequestContextService,
-	) {}
+	) { }
 
 	async getById(id: string): Promise<User> {
 		const tenantId = this.contextService.getTenantId();
 		const isSuperUser = this.contextService.isSuperUser();
 
-		const user = await this.userRepository.getById(id);
+		const user = await this.handleCache(id, () => this.userRepository.getById(id));
 		if (!user) throw new NotFoundException(`User with ID ${id} not found`);
-		if (!isSuperUser && user.tenantId !== tenantId) {
-			throw new ForbiddenException('Access denied for tenant');
-		}
 
-		return user;
-	}
-
-	async getByEmail(email: string): Promise<User> {
-		const tenantId = this.contextService.getTenantId();
-		const isSuperUser = this.contextService.isSuperUser();
-
-		const user = await this.userRepository.getByEmail(email);
-		if (!user) throw new NotFoundException(`User with email ${email} not found`);
-		if (!isSuperUser && user.tenantId !== tenantId) {
-			throw new ForbiddenException('Access denied for tenant');
-		}
-
-		return user;
-	}
-
-	async getByUsername(username: string): Promise<User> {
-		const tenantId = this.contextService.getTenantId();
-		const isSuperUser = this.contextService.isSuperUser();
-
-		const user = await this.userRepository.getByUsername(username);
-		if (!user) throw new NotFoundException(`User with username ${username} not found`);
 		if (!isSuperUser && user.tenantId !== tenantId) {
 			throw new ForbiddenException('Access denied for tenant');
 		}
@@ -82,26 +67,27 @@ export class UserService implements IUserService {
 			throw new UnauthorizedException('Cannot assign role from another tenant');
 		}
 
-		const tenantId = isSuperAdminRole ? null : actorTenantId;
+		const tenantId = isSuperAdminRole ? undefined : actorTenantId;
 
-		const emailInUse = await this.userRepository.getByEmail(payload.email);
-		if (emailInUse && emailInUse.tenantId === tenantId) {
-			throw new BadRequestException('Email is already in use in this tenant');
+		const existingUser = await this.userRepository.findByEmailOrUsername(payload.email, payload.username);
+		if (existingUser && existingUser.tenantId === tenantId) {
+			if (existingUser.email === payload.email) {
+				throw new BadRequestException('Email is already in use in this tenant');
+			}
+			if (existingUser.username === payload.username) {
+				throw new BadRequestException('Username is already in use in this tenant');
+			}
 		}
 
-		const usernameInUse = await this.userRepository.getByUsername(payload.username);
-		if (usernameInUse && usernameInUse.tenantId === tenantId) {
-			throw new BadRequestException('Username is already in use in this tenant');
-		}
 
-		const user = await new User().new(
-			payload.fullname,
-			payload.username,
-			payload.email,
-			payload.password,
-			payload.role_id,
+		const user = await User.create({
+			fullName: payload.fullname,
+			username: payload.username,
+			email: payload.email,
+			password: payload.password,
+			roleId: payload.role_id,
 			tenantId,
-		);
+		});
 
 		await this.userRepository.create(user);
 	}
@@ -125,7 +111,7 @@ export class UserService implements IUserService {
 		const role = await this.roleRepository.getById(roleId);
 		if (!role) throw new BadRequestException('Role does not exist');
 
-		user.role_id = roleId;
+		user.roleId = roleId;
 		await this.userRepository.update(userId, user);
 	}
 
@@ -141,7 +127,7 @@ export class UserService implements IUserService {
 			throw new ForbiddenException('Access denied for tenant');
 		}
 
-		user.is_active = isActive;
+		user.isActive = isActive;
 		await this.userRepository.update(userId, user);
 	}
 
@@ -167,13 +153,23 @@ export class UserService implements IUserService {
 				throw new ForbiddenException('Cannot assign role from another tenant');
 			}
 
-			user.role_id = data.role_id;
+			user.roleId = data.role_id;
 		}
 
-		user.fullname = data.fullname ?? user.fullname;
+		user.fullName = data.fullname ?? user.fullName;
+
+		if (data.profilePhotoId) {
+			const file = await this.storageService.getById(data.profilePhotoId);
+			if (!file) {
+				throw new BadRequestException('File not valid');
+			}
+			await this.storageService.updateStatus(FileStatus.COMPLETED);
+			user.profilePhotoId = data.profilePhotoId;
+		}
 
 		if (data.password) {
-			await user.setPassword(data.password);
+			throw new ForbiddenException('Forbidden to change password');
+			// await user.setPassword(data.password);
 		}
 
 		if (data.email) {
@@ -189,6 +185,15 @@ export class UserService implements IUserService {
 		}
 
 		await this.userRepository.update(id, user);
+
+		if (user.profilePhotoId) {
+			const file = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S);
+			if (file) user.profilePhoto = file;
+		}
+
+		const key = `user:${user.id}`;
+		await this.cacheManager.del(key)
+		await this.cacheManager.set(key, user, ONE_DAY_MS);
 	}
 
 	async delete(id: string): Promise<void> {
@@ -207,6 +212,9 @@ export class UserService implements IUserService {
 		}
 
 		await this.userRepository.delete(id);
+
+		const key = `user:${user.id}`;
+		await this.cacheManager.del(key)
 	}
 
 	async setupSuperUser(payload: Omit<CreateUserDto, 'tenantId' | 'role_id'>): Promise<void> {
@@ -220,14 +228,30 @@ export class UserService implements IUserService {
 			throw new BadRequestException('Superadmin role not found');
 		}
 
-		const superUser = await new User().new(
-			payload.fullname,
-			payload.username,
-			payload.email,
-			payload.password,
-			role.id,
-		);
+		const superUser = await User.create({
+			fullName: payload.fullname,
+			username: payload.username,
+			email: payload.email,
+			password: payload.password,
+			roleId: role.id,
+		});
 
 		await this.userRepository.create(superUser);
+	}
+
+	private async handleCache(id: string, fetchUser: () => Promise<User | null>): Promise<User | null> {
+		const key = `user:${id}`;
+		const cached = await this.cacheManager.get<User | null>(key);
+		if (cached) return plainToInstance(User, cached);
+
+		const user = await fetchUser();
+		if (user) {
+			if (user.profilePhotoId) {
+				const file = await this.storageService.getById(user.profilePhotoId, ONE_DAY_S);
+				if (file) user.profilePhoto = file;
+			}
+			await this.cacheManager.set(key, user, ONE_DAY_MS);
+		}
+		return user;
 	}
 }

@@ -10,7 +10,7 @@ export class TenantRepository implements ITenantRepository {
 	constructor(
 		@InjectRepository(Tenant)
 		private readonly repo: Repository<Tenant>,
-	) {}
+	) { }
 
 	async findById(id: string): Promise<Tenant | null> {
 		return this.repo.findOne({ where: { id } });
@@ -25,10 +25,10 @@ export class TenantRepository implements ITenantRepository {
 
 		const where = keyword
 			? [
-					{ name: ILike(`%${keyword}%`) },
-					{ code: ILike(`%${keyword}%`) },
-					{ description: ILike(`%${keyword}%`) },
-				]
+				{ name: ILike(`%${keyword}%`) },
+				{ code: ILike(`%${keyword}%`) },
+				{ description: ILike(`%${keyword}%`) },
+			]
 			: {};
 
 		const [data, total] = await this.repo.findAndCount({
@@ -47,9 +47,8 @@ export class TenantRepository implements ITenantRepository {
 		return this.repo.save(tenant);
 	}
 
-	async update(id: string, tenant: Tenant): Promise<Tenant> {
+	async update(id: string, tenant: Tenant): Promise<void> {
 		await this.repo.update(id, tenant);
-		return this.findById(id) as Promise<Tenant>;
 	}
 
 	async delete(id: string): Promise<void> {

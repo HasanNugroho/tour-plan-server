@@ -13,7 +13,7 @@ export class FileRepository {
   constructor(
     @InjectRepository(File)
     private readonly db: Repository<File>,
-  ) {}
+  ) { }
 
   async create(file: File): Promise<File> {
     try {
@@ -25,7 +25,7 @@ export class FileRepository {
       throw new InternalServerErrorException(error);
     }
   }
-  
+
   async createMany(file: File[]): Promise<File[]> {
     try {
       return await this.db.save(file);
@@ -55,5 +55,9 @@ export class FileRepository {
 
   async findByStoredName(storedName: string, tenantId?: string): Promise<File | null> {
     return this.db.findOne({ where: { storedName, tenantId } });
+  }
+
+  async update(file: File): Promise<void> {
+    await this.db.save(file);
   }
 }

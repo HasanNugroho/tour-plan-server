@@ -34,9 +34,9 @@ export interface ITenantRepository {
 	 * Updates an existing tenant.
 	 * @param id - The unique identifier of the tenant to update.
 	 * @param tenant - The tenant entity with updated data.
-	 * @returns A promise that resolves to the updated tenant.
+	 * @returns A promise that void
 	 */
-	update(id: string, tenant: Tenant): Promise<Tenant>;
+	update(id: string, tenant: Tenant): Promise<void>;
 
 	/**
 	 * Deletes a tenant by its unique identifier.

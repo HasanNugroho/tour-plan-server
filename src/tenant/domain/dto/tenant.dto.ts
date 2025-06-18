@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, Length } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, Length } from 'class-validator';
 
 export class CreateTenantDto {
 	@ApiProperty({
@@ -36,6 +36,13 @@ export class CreateTenantDto {
 	@IsOptional()
 	@IsString()
 	contact_info?: string;
+
+	@ApiProperty({
+		description: 'file id of tenant logo',
+	})
+	@IsOptional()
+	@IsUUID('4')
+	logoId?: string;
 }
 
 export class UpdateTenantDto {
@@ -84,4 +91,11 @@ export class UpdateTenantDto {
 	@IsOptional()
 	@IsBoolean()
 	is_active?: boolean;
+
+	@ApiProperty({
+		description: 'file id of tenant logo',
+	})
+	@IsOptional()
+	@IsUUID('4')
+	logoId?: string;
 }
