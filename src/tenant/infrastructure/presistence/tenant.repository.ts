@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Repository, ILike } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { Tenant } from 'src/tenant/domain/tenant';
 import { ITenantRepository } from 'src/tenant/domain/interface/tenant.repository.interface';
+import { TenantFilterOptionDto } from 'src/tenant/presentation/dto/tenant-filter.dto';
 
 @Injectable()
 export class TenantRepository implements ITenantRepository {
@@ -20,28 +20,45 @@ export class TenantRepository implements ITenantRepository {
 		return this.repo.findOneBy({ code });
 	}
 
-	async getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
-		const { keyword, order = 'ASC', orderby = 'updated_at', limit = 10 } = pagination;
+	async getAll(pagination: TenantFilterOptionDto): Promise<{ data: Tenant[]; total: number }> {
+	const {
+		keyword,
+		order = 'ASC',
+		orderby = 'updated_at',
+		limit = 10,
+		isActive,
+	} = pagination;
 
-		const where = keyword
-			? [
-					{ name: ILike(`%${keyword}%`) },
-					{ code: ILike(`%${keyword}%`) },
-					{ description: ILike(`%${keyword}%`) },
-				]
-			: {};
+	console.log(isActive)
 
-		const [data, total] = await this.repo.findAndCount({
-			where,
-			order: {
-				[orderby]: order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
-			},
-			skip: pagination.getOffset(),
-			take: limit,
-		});
+	const baseFilter = {
+		...(isActive !== undefined && { isActive }),
+	};
 
-		return { data, total };
+	let where: any;
+
+	if (keyword) {
+		where = [
+			{ ...baseFilter, name: ILike(`%${keyword}%`) },
+			{ ...baseFilter, code: ILike(`%${keyword}%`) },
+			{ ...baseFilter, description: ILike(`%${keyword}%`) },
+		];
+	} else {
+		where = baseFilter;
 	}
+
+	const [data, total] = await this.repo.findAndCount({
+		where,
+		order: {
+			[orderby]: order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+		},
+		skip: pagination.getOffset(),
+		take: limit,
+	});
+
+	return { data, total };
+}
+
 
 	async create(tenant: Tenant): Promise<Tenant> {
 		return this.repo.save(tenant);

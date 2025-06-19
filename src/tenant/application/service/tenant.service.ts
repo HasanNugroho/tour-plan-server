@@ -10,12 +10,12 @@ import { ITenantRepository } from '../../domain/interface/tenant.repository.inte
 import { Tenant } from '../../domain/tenant';
 import { CreateTenantDto, UpdateTenantDto } from '../../domain/dto/tenant.dto';
 import { ONE_WEEK_MS, ONE_WEEK_S, STORAGE_SERVICE, TENANT_REPOSITORY } from 'src/common/constant';
-import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { RequestContextService } from 'src/common/context/request-context.service';
 import { plainToInstance } from 'class-transformer';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { File, FileStatus } from 'src/storage/domain/file';
 import { StorageServiceInterface } from 'src/storage/domain/interface/storage.service.interface';
+import { TenantFilterOptionDto } from 'src/tenant/presentation/dto/tenant-filter.dto';
 
 @Injectable()
 export class TenantService implements ITenantService {
@@ -59,7 +59,7 @@ export class TenantService implements ITenantService {
 		return tenant;
 	}
 
-	async getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }> {
+	async getAll(pagination: TenantFilterOptionDto): Promise<{ data: Tenant[]; total: number }> {
 		if (!this.context.isSuperUser()) {
 			throw new ForbiddenException('Only superadmin can access all tenants');
 		}
