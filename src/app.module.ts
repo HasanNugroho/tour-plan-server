@@ -8,7 +8,7 @@ import { winstonLoggerConfig } from './config/logger.config';
 import { WinstonModule } from 'nest-winston';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { AuthGuard } from './account/application/guards/auth.guard';
+import { AuthGuard } from './account/application/guard/auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { KeyvOptions } from './config/redis.config';
@@ -19,6 +19,7 @@ import { ContextMiddleware } from './common/middlewares/context.middleware';
 import { StorageModule } from './storage/storage.module';
 import Redis from 'ioredis';
 import { RequestContextInterceptor } from './common/context/request-context.interceptor';
+import { PartnerModule } from './partner/partner.module';
 
 @Module({
 	imports: [
@@ -53,6 +54,7 @@ import { RequestContextInterceptor } from './common/context/request-context.inte
 		AccountModule,
 		TenantModule,
 		StorageModule,
+		PartnerModule,
 	],
 	controllers: [],
 	providers: [

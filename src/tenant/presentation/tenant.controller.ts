@@ -27,6 +27,7 @@ import { CreateTenantDto, UpdateTenantDto } from '../domain/dto/tenant.dto';
 import { HttpResponse } from 'src/common/dtos/response.dto';
 import { PageMetaDto } from 'src/common/dtos/page-meta.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { TenantFilterOptionDto } from './dto/tenant-filter.dto';
 
 @ApiBearerAuth()
 @ApiTags('Tenants')
@@ -41,7 +42,7 @@ export class TenantController {
 	@ApiOperation({ summary: 'Get all tenants with pagination' })
 	@ApiResponse({ status: 200, description: 'List of tenants with pagination' })
 	@Roles()
-	async findAll(@Query() pagination: PaginationOptionsDto) {
+	async findAll(@Query() pagination: TenantFilterOptionDto) {
 		const { data, total } = await this.tenantService.getAll(pagination);
 		return new HttpResponse(
 			HttpStatus.OK,
@@ -93,7 +94,7 @@ export class TenantController {
 			await this.tenantService.update(id, payload);
 			return new HttpResponse(HttpStatus.OK, true, 'Update tenant successfully');
 		} catch (error) {
-			return error;
+			throw error;
 		}
 	}
 
@@ -108,7 +109,7 @@ export class TenantController {
 			await this.tenantService.delete(id);
 			return new HttpResponse(HttpStatus.OK, true, 'Delete tenant successfully');
 		} catch (error) {
-			return error;
+			throw error;
 		}
 	}
 }

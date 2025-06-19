@@ -10,7 +10,7 @@ export class RoleRepository implements IRoleRepository {
 	constructor(
 		@InjectRepository(Role)
 		private readonly db: Repository<Role>,
-	) { }
+	) {}
 
 	async create(role: Role): Promise<Role> {
 		try {
@@ -25,11 +25,11 @@ export class RoleRepository implements IRoleRepository {
 	}
 
 	async getById(id: string): Promise<Role | null> {
-		return this.db.findOne({ where: { id } });
+		return this.db.findOneBy({ id });
 	}
 
 	async getByName(name: string): Promise<Role | null> {
-		return this.db.findOne({ where: { name } });
+		return this.db.findOneBy({ name });
 	}
 
 	async getAll(
@@ -64,7 +64,7 @@ export class RoleRepository implements IRoleRepository {
 	}
 
 	async update(id: string, RoleData: Partial<Role>): Promise<void> {
-		const existingRole = await this.db.findOne({ where: { id } });
+		const existingRole = await this.db.findOneBy({ id });
 
 		if (!existingRole) {
 			throw new NotFoundException('Role not found');

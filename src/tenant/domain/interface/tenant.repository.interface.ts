@@ -1,27 +1,27 @@
-import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { Tenant } from '../tenant';
+import { TenantFilterOptionDto } from 'src/tenant/presentation/dto/tenant-filter.dto';
 
 export interface ITenantRepository {
 	/**
-	 * Finds a tenant by its unique identifier.
+	 * gets a tenant by its unique identifier.
 	 * @param id - The unique identifier of the tenant.
 	 * @returns A promise that resolves to the tenant if found, or null otherwise.
 	 */
-	findById(id: string): Promise<Tenant | null>;
+	getById(id: string): Promise<Tenant | null>;
 
 	/**
-	 * Finds a tenant by its unique code.
+	 * gets a tenant by its unique code.
 	 * @param code - The unique code of the tenant.
 	 * @returns A promise that resolves to the tenant if found, or null otherwise.
 	 */
-	findByCode(code: string): Promise<Tenant | null>;
+	getByCode(code: string): Promise<Tenant | null>;
 
 	/**
 	 * Retrieves all tenants.
 	 * @param pagination - Pagination options to control the number of results and offset.
 	 * @returns A promise that resolves to an array of tenants.
 	 */
-	findAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }>;
+	getAll(pagination: TenantFilterOptionDto): Promise<{ data: Tenant[]; total: number }>;
 
 	/**
 	 * Creates a new tenant.

@@ -28,7 +28,7 @@ export interface IUserRepository {
 	 *
 	 * @returns The user with the given email or username, or null if not found
 	 */
-	findByEmailOrUsername(email: string, username: string): Promise<User | null>;
+	getByEmailOrUsername(email: string, username: string): Promise<User | null>;
 
 	/**
 	 * @param roleId - The roleId of the users to fetch

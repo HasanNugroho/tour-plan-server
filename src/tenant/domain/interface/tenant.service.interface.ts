@@ -1,6 +1,6 @@
-import { PaginationOptionsDto } from 'src/common/dtos/page-option.dto';
 import { CreateTenantDto, UpdateTenantDto } from '../dto/tenant.dto';
 import { Tenant } from '../tenant';
+import { TenantFilterOptionDto } from 'src/tenant/presentation/dto/tenant-filter.dto';
 
 export interface ITenantService {
 	/**
@@ -22,7 +22,7 @@ export interface ITenantService {
 	 * @param pagination - Pagination options to control the number of results and offset.
 	 * @returns A promise that resolves to an array of all tenants.
 	 */
-	getAll(pagination: PaginationOptionsDto): Promise<{ data: Tenant[]; total: number }>;
+	getAll(pagination: TenantFilterOptionDto): Promise<{ data: Tenant[]; total: number }>;
 
 	/**
 	 * Creates a new tenant.

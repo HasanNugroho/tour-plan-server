@@ -14,7 +14,7 @@ export class UserRepository implements IUserRepository {
 	constructor(
 		@InjectRepository(User)
 		private readonly db: Repository<User>,
-	) { }
+	) {}
 
 	async create(user: User): Promise<User> {
 		try {
@@ -28,24 +28,21 @@ export class UserRepository implements IUserRepository {
 	}
 
 	async getById(id: string): Promise<User | null> {
-		return this.db.findOne({ where: { id } });
+		return this.db.findOneBy({ id });
 	}
 
 	async getByEmail(email: string): Promise<User | null> {
-		return this.db.findOne({ where: { email } });
+		return this.db.findOneBy({ email });
 	}
 
 	async getByUsername(username: string): Promise<User | null> {
-		return this.db.findOne({ where: { username } });
+		return this.db.findOneBy({ username });
 	}
 
-	async findByEmailOrUsername(email: string, username: string): Promise<User | null> {
+	async getByEmailOrUsername(email: string, username: string): Promise<User | null> {
 		return this.db.findOne({
-			where: [
-				{ email },
-				{ username },
-			],
-		})
+			where: [{ email }, { username }],
+		});
 	}
 
 	async getAllByRoleId(roleId: string): Promise<User[]> {
@@ -53,7 +50,7 @@ export class UserRepository implements IUserRepository {
 	}
 
 	async update(id: string, userData: Partial<User>): Promise<User> {
-		const existingUser = await this.db.findOne({ where: { id } });
+		const existingUser = await this.db.findOneBy({ id });
 
 		if (!existingUser) {
 			throw new NotFoundException('User not found');
@@ -77,8 +74,6 @@ export class UserRepository implements IUserRepository {
 	}
 
 	getSuperUser(): Promise<User | null> {
-		return this.db.findOne({
-			where: { tenantId: IsNull() },
-		});
+		return this.db.findOneBy({ tenantId: IsNull() });
 	}
 }

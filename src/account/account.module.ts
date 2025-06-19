@@ -1,5 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
-import { UserService } from './application/services/user.service';
+import { UserService } from './application/service/user.service';
 import {
 	AUTH_SERVICE,
 	ROLE_REPOSITORY,
@@ -12,12 +12,12 @@ import { User } from './domain/user';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserController } from './presentation/user.controller';
 import { RoleController } from './presentation/role.controller';
-import { RoleService } from './application/services/role.service';
+import { RoleService } from './application/service/role.service';
 import { RoleRepository } from './infrastructure/presistence/role.repository';
 import { Role } from './domain/role';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from './application/services/auth.service';
+import { AuthService } from './application/service/auth.service';
 import { AuthController } from './presentation/auth.controller';
 import { RequestContextModule } from 'src/common/context/request-context.module';
 import { StorageModule } from 'src/storage/storage.module';
@@ -36,7 +36,7 @@ import { TenantModule } from 'src/tenant/tenant.module';
 		}),
 		RequestContextModule,
 		StorageModule,
-		TenantModule
+		TenantModule,
 	],
 	controllers: [UserController, RoleController, AuthController],
 	providers: [
@@ -63,4 +63,4 @@ import { TenantModule } from 'src/tenant/tenant.module';
 	],
 	exports: [USER_REPOSITORY, ROLE_REPOSITORY],
 })
-export class AccountModule { }
+export class AccountModule {}
